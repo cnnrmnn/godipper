@@ -20,6 +20,8 @@ type Location struct {
 	Locality      string `json:"locality"`
 	Region        string `json:"region"`
 	PostalCode    string `json:"postalCode"`
+	Distance      string `json:"distance"`
+	Phone         string `json:"phone"`
 	Delivery      bool   `json:"delivery"`
 }
 
@@ -105,6 +107,8 @@ func parseLocation(node *html.Node) Location {
 	locality := spanInnerText(node, "locality")
 	region := spanInnerText(node, "region")
 	postalCode := spanInnerText(node, "postal-code")
+	distance := spanInnerText(node, "location-distance")
+	phone := spanInnerText(node, "tel")
 	deliveryTag := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
 	delivery := false
 	if deliveryTag != nil {
@@ -118,6 +122,8 @@ func parseLocation(node *html.Node) Location {
 		Locality:      locality,
 		Region:        region,
 		PostalCode:    postalCode,
+		Distance:      distance,
+		Phone:         phone,
 		Delivery:      delivery,
 	}
 	return location
