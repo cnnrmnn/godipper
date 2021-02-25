@@ -22,10 +22,7 @@ type Location struct {
 	PostalCode    string `json:"postalCode"`
 	Distance      string `json:"distance"`
 	Phone         string `json:"phone"`
-	Delivery      bool   `json:"delivery"`
 }
-
-type Locations []Location
 
 // Encode writes the JSON encoding of location to writer. At some point, write
 // benchmark to see if this would run faster if written as a method of *Location
@@ -40,20 +37,9 @@ func (location Location) Encode(writer io.Writer) error {
 	return err
 }
 
-// Encode writes the JSON encoding of locations to writer.
-func (locations Locations) Encode(writer io.Writer) error {
-	encoder := json.NewEncoder(writer)
-	err := encoder.Encode(locations)
-	if err != nil {
-		err = fmt.Errorf("writing JSON encoding of locations: %v", err)
-		return err
-	}
-	return err
-}
-
-// FindLocations returns a slice of locations that are in proximity of the
-// given coordinates.
-func FindLocations(lat, lng string) (locations Locations) {
+// FindLocation returns the nearest location that is in proximity of the given
+// coordinates.
+func FindLocation(lat, lng string) (location Location) {
 	// Go documentation suggests that Clients should be reused rather than
 	// created as needed due to internal state in their Transports. Address
 	// this later. Client would ideally be reused for requests with same
@@ -97,10 +83,11 @@ func spanInnerText(node *html.Node, class string) string {
 	return innerText
 }
 
-// parseLocation parses and returns a location from the location's root node. At
-// some point, write benchmark to see if this would run faster if written as a
-// method of *Location (Location contains quite a bit of data).
-func parseLocation(node *html.Node) Location {
+// parseLocation parses and returns a location from the location's root node if
+// that location offers delivery. At some point, write benchmark to see if this
+// would run faster if written as a method of *Location (Location contains quite
+// a bit of data).
+func parseLocation(node *html.Node) (location Location) {
 	id := htmlquery.SelectAttr(node, "id")[9:]
 	name := spanInnerText(node, "location-title")
 	streetAddress := spanInnerText(node, "street-address")
@@ -109,13 +96,12 @@ func parseLocation(node *html.Node) Location {
 	postalCode := spanInnerText(node, "postal-code")
 	distance := spanInnerText(node, "location-distance")
 	phone := spanInnerText(node, "tel")
-	deliveryTag := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
-	delivery := false
-	if deliveryTag != nil {
-		delivery = true
+	delivery := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
+	if delivery == nil {
+		return location
 	}
 
-	location := Location{
+	location = Location{
 		ID:            id,
 		Name:          name,
 		StreetAddress: streetAddress,
@@ -124,20 +110,18 @@ func parseLocation(node *html.Node) Location {
 		PostalCode:    postalCode,
 		Distance:      distance,
 		Phone:         phone,
-		Delivery:      delivery,
 	}
 	return location
 }
 
-// parseLocation parses and returns a slice of locations from the location
-// search page's root node.
-func parseLocations(doc *html.Node) (locations Locations) {
+// parseLocations parses and returns the nearest location, if any, from the
+// location search page's root node.
+func parseLocations(doc *html.Node) (location Location) {
 	results := htmlquery.FindOne(doc, "//div[@class=\"col12 location-results\"]")
-	if results == nil {
-		return locations
+	if results != nil {
+		if nearest := results.FirstChild; nearest != nil {
+			location = parseLocation(nearest)
+		}
 	}
-	for result := results.FirstChild; result != nil; result = result.NextSibling {
-		locations = append(locations, parseLocation(result))
-	}
-	return locations
+	return location
 }
