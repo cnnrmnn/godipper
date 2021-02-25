@@ -58,26 +58,30 @@ func FindLocations(lat, lng string) (locations []*Location) {
 	return parseLocations(doc)
 }
 
+// spanInnerText finds the span tag with the given class and returns its inner
+// text.
+func spanInnerText(node *html.Node, class string) string {
+	query := fmt.Sprintf("//span[@class='%v']", class)
+	tag := htmlquery.FindOne(node, query)
+	innerText := htmlquery.InnerText(tag)
+	return innerText
+}
+
 // parseLocation parses and returns a location from the location's root node.
-func parseLocation(node *html.Node) (location *Location) {
+func parseLocation(node *html.Node) *Location {
 	id := htmlquery.SelectAttr(node, "id")[9:]
-	nameTag := htmlquery.FindOne(node, "//span[@class='location-title']")
-	name := htmlquery.InnerText(nameTag)
-	addressTag := htmlquery.FindOne(node, "//span[@class='street-address']")
-	streetAddress := htmlquery.InnerText(addressTag)
-	localityTag := htmlquery.FindOne(node, "//span[@class='locality']")
-	locality := htmlquery.InnerText(localityTag)
-	regionTag := htmlquery.FindOne(node, "//span[@class='region']")
-	region := htmlquery.InnerText(regionTag)
-	postalCodeTag := htmlquery.FindOne(node, "//span[@class='postal-code']")
-	postalCode := htmlquery.InnerText(postalCodeTag)
+	name := spanInnerText(node, "location-title")
+	streetAddress := spanInnerText(node, "street-address")
+	locality := spanInnerText(node, "locality")
+	region := spanInnerText(node, "region")
+	postalCode := spanInnerText(node, "postal-code")
 	deliveryTag := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
 	delivery := false
 	if deliveryTag != nil {
 		delivery = true
 	}
 
-	location = &Location{
+	location := &Location{
 		ID:            id,
 		Name:          name,
 		StreetAddress: streetAddress,
