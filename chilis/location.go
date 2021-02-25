@@ -1,7 +1,9 @@
 package chilis
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,18 +14,44 @@ import (
 
 // A Location is a Chili's restuarant location
 type Location struct {
-	ID            string
-	Name          string
-	StreetAddress string
-	Locality      string
-	Region        string
-	PostalCode    string
-	Delivery      bool
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	StreetAddress string `json:"streetAddress"`
+	Locality      string `json:"locality"`
+	Region        string `json:"region"`
+	PostalCode    string `json:"postalCode"`
+	Delivery      bool   `json:"delivery"`
+}
+
+type Locations []Location
+
+// Encode writes the JSON encoding of location to writer. At some point, write
+// benchmark to see if this would run faster if written as a method of *Location
+// (Location contains quite a bit of data).
+func (location Location) Encode(writer io.Writer) error {
+	encoder := json.NewEncoder(writer)
+	err := encoder.Encode(location)
+	if err != nil {
+		err = fmt.Errorf("writing JSON encoding of location: %v", err)
+		return err
+	}
+	return err
+}
+
+// Encode writes the JSON encoding of locations to writer.
+func (locations Locations) Encode(writer io.Writer) error {
+	encoder := json.NewEncoder(writer)
+	err := encoder.Encode(locations)
+	if err != nil {
+		err = fmt.Errorf("writing JSON encoding of locations: %v", err)
+		return err
+	}
+	return err
 }
 
 // FindLocations returns a slice of locations that are in proximity of the
 // given coordinates.
-func FindLocations(lat, lng string) (locations []*Location) {
+func FindLocations(lat, lng string) (locations Locations) {
 	// Go documentation suggests that Clients should be reused rather than
 	// created as needed due to internal state in their Transports. Address
 	// this later. Client would ideally be reused for requests with same
@@ -67,8 +95,10 @@ func spanInnerText(node *html.Node, class string) string {
 	return innerText
 }
 
-// parseLocation parses and returns a location from the location's root node.
-func parseLocation(node *html.Node) *Location {
+// parseLocation parses and returns a location from the location's root node. At
+// some point, write benchmark to see if this would run faster if written as a
+// method of *Location (Location contains quite a bit of data).
+func parseLocation(node *html.Node) Location {
 	id := htmlquery.SelectAttr(node, "id")[9:]
 	name := spanInnerText(node, "location-title")
 	streetAddress := spanInnerText(node, "street-address")
@@ -81,7 +111,7 @@ func parseLocation(node *html.Node) *Location {
 		delivery = true
 	}
 
-	location := &Location{
+	location := Location{
 		ID:            id,
 		Name:          name,
 		StreetAddress: streetAddress,
@@ -95,7 +125,7 @@ func parseLocation(node *html.Node) *Location {
 
 // parseLocation parses and returns a slice of locations from the location
 // search page's root node.
-func parseLocations(doc *html.Node) (locations []*Location) {
+func parseLocations(doc *html.Node) (locations Locations) {
 	results := htmlquery.FindOne(doc, "//div[@class=\"col12 location-results\"]")
 	if results == nil {
 		return locations
