@@ -61,10 +61,16 @@ func NearestLocationID(lat, lng string) (string, error) {
 	return id, err
 }
 
-// spanInnerText finds the span tag with the given class and returns its inner
-// text.
-func spanInnerText(node *html.Node, class string) string {
-	query := fmt.Sprintf("//span[@class='%v']", class)
+// classQuery returns an XPath query for an HTML element with the given name and
+// class attribute.
+func classQuery(name string, class string) string {
+	return fmt.Sprintf("//%s[@class='%s']", name, class)
+}
+
+// innerText finds the first HTML element with the given name and class
+// attribute and returns its inner text.
+func innerText(node *html.Node, name string, class string) string {
+	query := classQuery(name, class)
 	tag := htmlquery.FindOne(node, query)
 	innerText := htmlquery.InnerText(tag)
 	return innerText
