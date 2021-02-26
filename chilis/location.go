@@ -79,11 +79,9 @@ func parseID(node *html.Node) (string, bool) {
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, bool) {
-	results, err := findOne(doc, "div", "col12 location-results")
-	if err == nil {
-		if nearest := results.FirstChild; nearest != nil {
-			return parseID(nearest)
-		}
+	nearest, err := findOne(doc, "div", "location")
+	if err != nil {
+		return "", false
 	}
-	return "", false
+	return parseID(nearest)
 }
