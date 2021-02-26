@@ -69,9 +69,12 @@ func classQuery(name string, class string) string {
 
 // innerText finds the first HTML element with the given name and class
 // attribute and returns its inner text.
-func innerText(node *html.Node, name string, class string) string {
+func innerText(node *html.Node, name string, class string) (string, error) {
 	query := classQuery(name, class)
 	tag := htmlquery.FindOne(node, query)
+	if tag == nil {
+		return "", errors.New("no matching elements found")
+	}
 	innerText := htmlquery.InnerText(tag)
 	return innerText
 }
