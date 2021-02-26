@@ -1,12 +1,10 @@
 package chilis
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
@@ -14,32 +12,17 @@ import (
 
 // A Location is a Chili's restuarant location
 type Location struct {
-	ID            string `json:"id"`
 	Name          string `json:"name"`
 	StreetAddress string `json:"streetAddress"`
-	Locality      string `json:"locality"`
-	Region        string `json:"region"`
-	PostalCode    string `json:"postalCode"`
-	Distance      string `json:"distance"`
+	City          string `json:"city"`
+	State         string `json:"state"`
+	Zip           string `json:"zip"`
 	Phone         string `json:"phone"`
 }
 
-// Encode writes the JSON encoding of location to writer. At some point, write
-// benchmark to see if this would run faster if written as a method of *Location
-// (Location contains quite a bit of data).
-func (location Location) Encode(writer io.Writer) error {
-	encoder := json.NewEncoder(writer)
-	err := encoder.Encode(location)
-	if err != nil {
-		err = fmt.Errorf("writing JSON encoding of location: %v", err)
-		return err
-	}
-	return err
-}
-
-// FindLocation returns the nearest location that is in proximity of the given
-// coordinates.
-func FindLocation(lat, lng string) (location Location) {
+// NearestLocationID returns the ID of the nearest location that is in proximity
+// of the given coordinates.
+func NearestLocationID(lat, lng string) (string, error) {
 	// Go documentation suggests that Clients should be reused rather than
 	// created as needed due to internal state in their Transports. Address
 	// this later. Client would ideally be reused for requests with same
@@ -49,8 +32,8 @@ func FindLocation(lat, lng string) (location Location) {
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/locations/results", nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating locations request: %v\n", err)
-		return
+		err = fmt.Errorf("creating locations request: %v", err)
+		return "", err
 	}
 
 	query := url.Values{
@@ -61,17 +44,21 @@ func FindLocation(lat, lng string) (location Location) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error fetching locations: %v\n", err)
-		return
+		err = fmt.Errorf("fetching location: %v", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error parsing locations html: %v\n", err)
-		return
+		err = fmt.Errorf("parsing locations html: %v", err)
+		return "", err
 	}
-	return parseLocations(doc)
+	id, ok := parseNearestID(doc)
+	if !ok {
+		err = errors.New("no locations in proximity")
+	}
+	return id, err
 }
 
 // spanInnerText finds the span tag with the given class and returns its inner
@@ -83,45 +70,25 @@ func spanInnerText(node *html.Node, class string) string {
 	return innerText
 }
 
-// parseLocation parses and returns a location from the location's root node if
-// that location offers delivery. At some point, write benchmark to see if this
-// would run faster if written as a method of *Location (Location contains quite
-// a bit of data).
-func parseLocation(node *html.Node) (location Location) {
-	id := htmlquery.SelectAttr(node, "id")[9:]
-	name := spanInnerText(node, "location-title")
-	streetAddress := spanInnerText(node, "street-address")
-	locality := spanInnerText(node, "locality")
-	region := spanInnerText(node, "region")
-	postalCode := spanInnerText(node, "postal-code")
-	distance := spanInnerText(node, "location-distance")
-	phone := spanInnerText(node, "tel")
+// parseID parses and returns the location's ID from its root node if the
+// location offers delivery.
+func parseID(node *html.Node) (string, bool) {
 	delivery := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
 	if delivery == nil {
-		return location
+		return "", false
 	}
 
-	location = Location{
-		ID:            id,
-		Name:          name,
-		StreetAddress: streetAddress,
-		Locality:      locality,
-		Region:        region,
-		PostalCode:    postalCode,
-		Distance:      distance,
-		Phone:         phone,
-	}
-	return location
+	return htmlquery.SelectAttr(node, "id")[9:], true
 }
 
-// parseLocations parses and returns the nearest location, if any, from the
+// parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
-func parseLocations(doc *html.Node) (location Location) {
+func parseNearestID(doc *html.Node) (string, bool) {
 	results := htmlquery.FindOne(doc, "//div[@class=\"col12 location-results\"]")
 	if results != nil {
 		if nearest := results.FirstChild; nearest != nil {
-			location = parseLocation(nearest)
+			return parseID(nearest)
 		}
 	}
-	return location
+	return "", false
 }
