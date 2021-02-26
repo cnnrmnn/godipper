@@ -61,6 +61,53 @@ func NearestLocationID(lat, lng string) (string, error) {
 	return id, err
 }
 
+// SetLocation sets the Chili's location for a new session and returns the new
+// session's ID.
+func SetLocation(id string) (string, error) {
+	session, err := startSession()
+	if err != nil {
+		return "", err
+	}
+	// See above note on Client reuse.
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "https://www.chilis.com/order", nil)
+	if err != nil {
+		err = fmt.Errorf("setting location: %v", err)
+		return "", err
+	}
+	req.AddCookie(session)
+	query := url.Values{
+		"rid": []string{id},
+	}
+	req.URL.RawQuery = query.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		err = fmt.Errorf("setting location: %v", err)
+	}
+	resp.Body.Close()
+
+	return session.Value, nil
+}
+
+// startSession makes starts a Chili's session and returns the new session's
+// ID. Unfortunately, the first request (before the session cookie is set)
+// can't set the session's location.
+func startSession() (*http.Cookie, error) {
+	resp, err := http.Get("https://www.chilis.com")
+	if err != nil {
+		err = fmt.Errorf("starting session: %v", err)
+		return nil, err
+	}
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "SESSION" {
+			return cookie, nil
+		}
+	}
+	return nil, errors.New("failed to find session cookie")
+}
+
 // parseID parses and returns the location's ID from its root node if the
 // location offers delivery.
 func parseID(node *html.Node) (string, bool) {
