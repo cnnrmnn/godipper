@@ -64,19 +64,23 @@ func NearestLocationID(lat, lng string) (string, error) {
 // parseID parses and returns the location's ID from its root node if the
 // location offers delivery.
 func parseID(node *html.Node) (string, bool) {
-	delivery := htmlquery.FindOne(node, "//span[@class='delivery icon-doordash']")
-	if delivery == nil {
+	_, err := findOne(node, "span", "delivery icon-doordash")
+	if err != nil {
 		return "", false
 	}
 
-	return htmlquery.SelectAttr(node, "id")[9:], true
+	id := htmlquery.SelectAttr(node, "id")[9:]
+	if id == "" {
+		return id, false
+	}
+	return id, true
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, bool) {
-	results := htmlquery.FindOne(doc, "//div[@class=\"col12 location-results\"]")
-	if results != nil {
+	results, err := findOne(doc, "div", "col12 location-results")
+	if err == nil {
 		if nearest := results.FirstChild; nearest != nil {
 			return parseID(nearest)
 		}
