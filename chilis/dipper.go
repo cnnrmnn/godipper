@@ -1,5 +1,13 @@
 package chilis
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/antchfx/htmlquery"
+	"golang.org/x/net/html"
+)
+
 // items is a hash table that maps an Item to its display name.
 var items = map[Item]string{
 	0:  "Awesome Blossom Petals",
@@ -85,9 +93,39 @@ func (item Item) Permitted(extra Extra) bool {
 	return false
 }
 
+// ParseID parses and returns an Item's Chili's ID given its selection index.
+func (item Item) ParseID(node *html.Node, index int) (string, error) {
+	text := fmt.Sprintf("Selection %d", index+1)
+	label, err := findOne(node, textQuery("label", text))
+	if err != nil {
+		return "", fmt.Errorf("parsing Item's Chili's ID: %v", err)
+	}
+	selection := label.Parent
+	option, err := findOne(selection, textQuery("option", item.Name()))
+	if err != nil {
+		return "", fmt.Errorf("parsing Item's Chili's ID: %v", err)
+	}
+	return htmlquery.SelectAttr(option, "value"), nil
+}
+
 // Name returns the Extra's display name.
 func (extra Extra) Name() string {
 	return extras[extra]
+}
+
+// ParseID parses and returns an Extra's Chili's ID given its Item's Chili's ID
+func (extra Extra) ParseID(node *html.Node, itemID string) (string, error) {
+	widgets, err := find(node, attrQuery("div", "data-related", itemID))
+	if err != nil {
+		return "", fmt.Errorf("parsing Extra's Chili's ID: %v", err)
+	}
+	for _, widget := range widgets {
+		option, err := findOne(widget, textQuery("option", extra.Name()))
+		if err == nil {
+			return htmlquery.SelectAttr(option, "value"), nil
+		}
+	}
+	return "", errors.New("parsing Extra's Chili's ID")
 }
 
 // Permitted returns true if all of the Dipper's Extras are permitted for the
