@@ -57,11 +57,11 @@ func NearestLocationID(lat, lng string) (string, error) {
 }
 
 // SetLocation sets the Chili's location for a new session and returns the new
-// session's ID.
-func SetLocation(id string) (string, error) {
+// session cookie.
+func SetLocation(id string) (*http.Cookie, error) {
 	session, err := startSession()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	client := http.DefaultClient
@@ -69,7 +69,7 @@ func SetLocation(id string) (string, error) {
 	req, err := http.NewRequest("GET", "https://www.chilis.com/order", nil)
 	if err != nil {
 		err = fmt.Errorf("setting location: %v", err)
-		return "", err
+		return nil, err
 	}
 	req.AddCookie(session)
 	query := url.Values{
@@ -83,7 +83,7 @@ func SetLocation(id string) (string, error) {
 	}
 	resp.Body.Close()
 
-	return session.Value, nil
+	return session, nil
 }
 
 // startSession makes starts a Chili's session and returns the new session's
