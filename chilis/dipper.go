@@ -145,7 +145,7 @@ func (dipper Dipper) Permitted() bool {
 
 // parsePage parses the Triple Dipper page and returns its root node given a
 // session cookie.
-func parsePage(client *http.Client, url string, session *http.Cookie) (*html.Node, error) {
+func parsePage(client *http.Client, url string) (*html.Node, error) {
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("fetching Triple Dipper page: %v", err)
@@ -200,7 +200,7 @@ func (tripleDipper TripleDipper) Cart(session *http.Cookie) error {
 	client := &http.Client{Jar: jar}
 
 	endpoint := "https://www.chilis.com/menu/appetizers/triple-dipper"
-	doc, err := parsePage(client, endpoint, session)
+	doc, err := parsePage(client, endpoint)
 	if err != nil {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
