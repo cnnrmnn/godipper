@@ -159,7 +159,7 @@ func parsePage(client *http.Client, url string) (*html.Node, error) {
 	return doc, nil
 }
 
-// form checks if the TripleDipper is permitted and adds all of its component's
+// form checks if the TripleDipper is permitted and adds all of its components'
 // Chili's IDs and a CSRF token to the given form Values map.
 func (tripleDipper TripleDipper) form(doc *html.Node) (*url.Values, error) {
 	form := &url.Values{}
