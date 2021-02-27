@@ -85,9 +85,9 @@ func SetLocation(id string) (*http.Cookie, error) {
 	return session, nil
 }
 
-// startSession makes starts a Chili's session and returns the new session's
-// ID. Unfortunately, the first request (before the session cookie is set)
-// can't set the session's location.
+// startSession starts a Chili's session and returns the new session cookie.
+// Unfortunately, the first request (before the session cookie is set) can't set
+// the session's location.
 func startSession() (*http.Cookie, error) {
 	resp, err := http.Get("https://www.chilis.com")
 	if err != nil {
