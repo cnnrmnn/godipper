@@ -23,12 +23,7 @@ type Location struct {
 // NearestLocationID returns the ID of the nearest location that is in proximity
 // of the given coordinates.
 func NearestLocationID(lat, lng string) (string, error) {
-	// Go documentation suggests that Clients should be reused rather than
-	// created as needed due to internal state in their Transports. Address
-	// this later. Client would ideally be reused for requests with same
-	// session cookie, however those requests are triggered by HTTP
-	// requests that could come at any time.
-	client := &http.Client{}
+	client := http.DefaultClient
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/locations/results", nil)
 	if err != nil {
@@ -68,8 +63,8 @@ func SetLocation(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// See above note on Client reuse.
-	client := &http.Client{}
+
+	client := http.DefaultClient
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/order", nil)
 	if err != nil {
