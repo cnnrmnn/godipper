@@ -63,7 +63,6 @@ func SetLocation(id string) (*http.Cookie, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	client := http.DefaultClient
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/order", nil)
@@ -79,7 +78,7 @@ func SetLocation(id string) (*http.Cookie, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		err = fmt.Errorf("setting location: %v", err)
+		return nil, fmt.Errorf("setting location: %v", err)
 	}
 	resp.Body.Close()
 
