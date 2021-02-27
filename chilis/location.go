@@ -101,21 +101,6 @@ func startSession() (*http.Cookie, error) {
 	return nil, errors.New("failed to find session cookie")
 }
 
-// parseID parses and returns the location's ID from its root node if the
-// location offers delivery.
-func parseID(node *html.Node) (string, bool) {
-	_, err := findOne(node, classQuery("span", "delivery icon-doordash"))
-	if err != nil {
-		return "", false
-	}
-
-	id := htmlquery.SelectAttr(node, "id")[9:]
-	if id == "" {
-		return id, false
-	}
-	return id, true
-}
-
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, bool) {
@@ -123,7 +108,16 @@ func parseNearestID(doc *html.Node) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	return parseID(nearest)
+	_, err = findOne(nearest, classQuery("span", "delivery icon-doordash"))
+	if err != nil {
+		return "", false
+	}
+
+	id := htmlquery.SelectAttr(nearest, "id")[9:]
+	if id == "" {
+		return id, false
+	}
+	return id, true
 }
 
 // parseLocation parses and returns a Location from an order confirmation page.
