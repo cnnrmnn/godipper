@@ -12,6 +12,6 @@ type Address struct {
 }
 
 // String returns a string representation of an Address (doesn't include Unit).
-func (a Address) String() {
+func (a Address) String() string {
 	return fmt.Sprintf("%s, %s, %s %s", a.Street, a.City, a.State, a.Zip)
 }
