@@ -11,7 +11,19 @@ import (
 // classQuery returns an XPath query for an HTML element with the given name and
 // class attribute.
 func classQuery(name string, class string) string {
-	return fmt.Sprintf("//%s[@class='%s']", name, class)
+	return attrQuery(name, "class", class)
+}
+
+// attrQuery returns an XPath query for an HTML element with the given name,
+// attribute, and value for that attribute.
+func attrQuery(name, attr, value string) string {
+	return fmt.Sprintf("//%s[@%s='%s']", name, attr, value)
+}
+
+// textQuery returns an XPath query for an HTML element with the given name and
+// inner text.
+func textQuery(name, text string) string {
+	return fmt.Sprintf("//%s[text()='%s']")
 }
 
 // find finds and returns a slice of HTML elements with the given name and
