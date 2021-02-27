@@ -1,11 +1,11 @@
 package chilis
 
 type Customer struct {
-	Address   Address
-	FirstName string
-	LastName  string
-	Phone     string
-	Email     string
+	Address   Address `json:"address"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	Phone     string  `json:"phone"`
+	Email     string  `json:"email"`
 }
 
 // validPhone returns true if the given string has 10 digit runes
