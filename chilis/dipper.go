@@ -1,6 +1,6 @@
 package chilis
 
-// items is a hash table that maps an item to its display name.
+// items is a hash table that maps an Item to its display name.
 var items = map[Item]string{
 	0:  "Awesome Blossom Petals",
 	1:  "Big Mouth® Bites",
@@ -21,7 +21,7 @@ var items = map[Item]string{
 	16: "Southwestern Eggrolls",
 }
 
-// extras is a hash table that maps an extra to its display name
+// extras is a hash table that maps an Extra to its display name
 var extras = map[Extra]string{
 	0: "Ancho-Chile Ranch Dressing",
 	1: "Avocado-Ranch Dressing",
@@ -31,7 +31,7 @@ var extras = map[Extra]string{
 	5: "Ranch Dressing",
 }
 
-// permitted is a hash table that maps an item to its set of permitted extras.
+// permitted is a hash table that maps an Item to its set of permitted Extras.
 var permitted = map[Item][]Extra{
 	0:  []Extra{1, 5},
 	1:  []Extra{5},
@@ -52,15 +52,15 @@ var permitted = map[Item][]Extra{
 	16: []Extra{1, 5},
 }
 
-// An Item is the appetizer component of a dipper.
+// An Item is the appetizer component of a Dipper.
 type Item byte
 
-// An Extra is an optional component of a dipper, typically used for dipping
+// An Extra is an optional component of a Dipper, typically used for dipping
 // sauces.
 type Extra byte
 
-// A Dipper is a component of a triple dipper. It is composed of an item and
-// its extras.
+// A Dipper is a component of a TripleDipper. It is composed of an Item and
+// its Extras.
 type Dipper struct {
 	Item   Item
 	Extras []Extra
@@ -70,12 +70,12 @@ type TripleDipper struct {
 	Dippers [3]Dipper
 }
 
-// Name returns the item's display name.
+// Name returns the Item's display name.
 func (item Item) Name() string {
 	return items[item]
 }
 
-// Permitted returns true if the given extra is permitted for the item.
+// Permitted returns true if the given Extra is permitted for the Item.
 func (item Item) Permitted(extra Extra) bool {
 	for _, permitted := range permitted[item] {
 		if extra == permitted {
@@ -85,13 +85,13 @@ func (item Item) Permitted(extra Extra) bool {
 	return false
 }
 
-// Name returns the extra's display name.
+// Name returns the Extra's display name.
 func (extra Extra) Name() string {
 	return extras[extra]
 }
 
-// Permitted returns true if all of the dipper's extras are permitted for the
-// dipper's item.
+// Permitted returns true if all of the Dipper's Extras are permitted for the
+// Dipper's item.
 func (dipper Dipper) Permitted() bool {
 	for _, extra := range dipper.Extras {
 		if !dipper.Item.Permitted(extra) {
