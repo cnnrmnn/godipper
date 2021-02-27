@@ -59,9 +59,9 @@ func innerText(node *html.Node, query string) (string, error) {
 // parseCSRFToken parses and returns the CSRF token given any Chili's form
 // page.
 func parseCSRFToken(node *html.Node) (string, error) {
-	input, err := findOne(atttQuery("input", "name", "_csrf"))
+	input, err := findOne(node, attrQuery("input", "name", "_csrf"))
 	if err != nil {
-		return "", fmt.Errof("parsing CSRF token: %v", err)
+		return "", fmt.Errorf("parsing CSRF token: %v", err)
 	}
-	return htmlquery.SelectAttr(input, value), nil
+	return htmlquery.SelectAttr(input, "value"), nil
 }
