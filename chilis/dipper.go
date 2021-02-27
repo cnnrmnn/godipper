@@ -1,8 +1,12 @@
 package chilis
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 
 	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
@@ -137,4 +141,88 @@ func (dipper Dipper) Permitted() bool {
 		}
 	}
 	return true
+}
+
+// parsePage parses the Triple Dipper page and returns its root node given a
+// session cookie.
+func parsePage(client *http.Client, url string, session *http.Cookie) (*html.Node, error) {
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("fetching Triple Dipper page: %v", err)
+	}
+	defer resp.Body.Close()
+
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("parsing Triple Dipper page: %v", err)
+	}
+	return doc, nil
+}
+
+// form checks if the TripleDipper is permitted and adds all of its component's
+// Chili's IDs and a CSRF token to the given form Values map.
+func (tripleDipper TripleDipper) form(doc *html.Node) (*url.Values, error) {
+	form := &url.Values{}
+	csrfToken, err := parseCSRFToken(doc)
+	if err != nil {
+		return nil, fmt.Errorf("adding CSRF token to cart: %v", err)
+	}
+
+	form.Add("_csrf", csrfToken)
+	for i, dipper := range tripleDipper.Dippers {
+		if !dipper.Permitted() {
+			return nil, fmt.Errorf("dipper %d is not permitted", i)
+		}
+
+		itemID, err := dipper.Item.ParseID(doc, i)
+		if err != nil {
+			return nil, fmt.Errorf("adding Item to cart: %v", err)
+		}
+		form.Add("selectedIds", itemID)
+
+		for _, extra := range dipper.Extras {
+			extraID, err := extra.ParseID(doc, itemID)
+			if err != nil {
+				return nil, fmt.Errorf("adding Extra to cart: %v", err)
+			}
+			form.Add("selectedIds", extraID)
+		}
+	}
+	return form, nil
+}
+
+// Cart adds the TripleDipper to the cart given a session cookie.
+func (tripleDipper TripleDipper) Cart(session *http.Cookie) error {
+	jar, err := createJar(session)
+	if err != nil {
+		fmt.Errorf("creating CookieJar for cart request: %v", err)
+	}
+	client := &http.Client{Jar: jar}
+
+	endpoint := "https://www.chilis.com/menu/appetizers/triple-dipper"
+	doc, err := parsePage(client, endpoint, session)
+	if err != nil {
+		return fmt.Errorf("adding TripleDipper to cart: %v", err)
+	}
+
+	form, err := tripleDipper.form(doc)
+	if err != nil {
+		return fmt.Errorf("adding TripleDipper to cart: %v", err)
+	}
+
+	resp, err := client.PostForm(endpoint, *form)
+	if err != nil {
+		return fmt.Errorf("posting cart request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading cart response body: %v", err)
+	}
+	// Request was successful if response body is a valid JSON encoding
+	if !json.Valid(body) {
+		return errors.New("unable to add TripleDipper to cart")
+	}
+	return nil
 }
