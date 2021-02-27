@@ -91,8 +91,7 @@ func SetLocation(id string) (*http.Cookie, error) {
 func startSession() (*http.Cookie, error) {
 	resp, err := http.Get("https://www.chilis.com")
 	if err != nil {
-		err = fmt.Errorf("starting session: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("starting session: %v", err)
 	}
 	for _, cookie := range resp.Cookies() {
 		if cookie.Name == "SESSION" {
