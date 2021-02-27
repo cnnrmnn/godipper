@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+// createJar creates and returns a Jar with the given session cookie in it.
 func createJar(session *http.Cookie) (*cookiejar.Jar, error) {
 	options := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(options)
