@@ -106,7 +106,7 @@ func startSession() (*http.Cookie, error) {
 // parseID parses and returns the location's ID from its root node if the
 // location offers delivery.
 func parseID(node *html.Node) (string, bool) {
-	_, err := findOne(node, "span", "delivery icon-doordash")
+	_, err := findOne(node, classQuery("span", "delivery icon-doordash"))
 	if err != nil {
 		return "", false
 	}
@@ -121,7 +121,7 @@ func parseID(node *html.Node) (string, bool) {
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, bool) {
-	nearest, err := findOne(doc, "div", "location")
+	nearest, err := findOne(doc, classQuery("div", "location"))
 	if err != nil {
 		return "", false
 	}
@@ -130,16 +130,16 @@ func parseNearestID(doc *html.Node) (string, bool) {
 
 // parseLocation parses and returns a Location from an order confirmation page.
 func parseLocation(doc *html.Node) (location Location, ok bool) {
-	node, err := findOne(doc, "div", "location-address-wrapper")
+	node, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
 		return location, false
 	}
 	// Assume no errors after locating address wrapper.
-	streetAddress, _ := innerText(node, "div", "location-address-street")
-	city, _ := innerText(node, "span", "location-address-city")
-	state, _ := innerText(node, "span", "location-address-state")
-	zip, _ := innerText(node, "span", "location-address-zip")
-	phone, _ := innerText(node, "a", "location-phone tel")
+	streetAddress, _ := innerText(node, classQuery("div", "location-address-street"))
+	city, _ := innerText(node, classQuery("span", "location-address-city"))
+	state, _ := innerText(node, classQuery("span", "location-address-state"))
+	zip, _ := innerText(node, classQuery("span", "location-address-zip"))
+	phone, _ := innerText(node, classQuery("a", "location-phone tel"))
 	return Location{
 		StreetAddress: streetAddress,
 		City:          city,

@@ -8,10 +8,24 @@ import (
 	"golang.org/x/net/html"
 )
 
-// findOne finds and returns the first HTML element with the given name and
-// class attribute
-func findOne(node *html.Node, name, class string) (*html.Node, error) {
-	query := fmt.Sprintf("//%s[@class='%s']", name, class)
+// classQuery returns an XPath query for an HTML element with the given name and
+// class attribute.
+func classQuery(name string, class string) string {
+	return fmt.Sprintf("//%s[@class='%s']", name, class)
+}
+
+// find finds and returns a slice of HTML elements with the given name and
+// class attribute.
+func find(node *html.Node, query string) ([]*html.Node, error) {
+	elements := htmlquery.Find(node, query)
+	if elements == nil {
+		return nil, errors.New("no matching elements found")
+	}
+	return elements, nil
+}
+
+// findOne is the same as find, but it only finds the first HTML element.
+func findOne(node *html.Node, query string) (*html.Node, error) {
 	element := htmlquery.FindOne(node, query)
 	if element == nil {
 		return nil, errors.New("no matching elements found")
@@ -21,8 +35,8 @@ func findOne(node *html.Node, name, class string) (*html.Node, error) {
 
 // innerText finds the first HTML element with the given name and class
 // attribute and returns its inner text.
-func innerText(node *html.Node, name, class string) (string, error) {
-	element, err := findOne(node, name, class)
+func innerText(node *html.Node, query string) (string, error) {
+	element, err := findOne(node, query)
 	if err != nil {
 		return "", fmt.Errorf("failed to get inner text: %v", err)
 	}
