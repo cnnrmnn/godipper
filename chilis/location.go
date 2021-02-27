@@ -12,12 +12,9 @@ import (
 
 // A Location is a Chili's restuarant location
 type Location struct {
-	Name          string `json:"name"`
-	StreetAddress string `json:"streetAddress"`
-	City          string `json:"city"`
-	State         string `json:"state"`
-	Zip           string `json:"zip"`
-	Phone         string `json:"phone"`
+	Name    string  `json:"name"`
+	Address Address `json:"address"`
+	Phone   string  `json:"phone"`
 }
 
 // NearestLocationID returns the ID of the nearest location that is in proximity
@@ -127,16 +124,18 @@ func parseLocation(doc *html.Node) (location Location, ok bool) {
 		return location, false
 	}
 	// Assume no errors after locating address wrapper.
-	streetAddress, _ := innerText(node, classQuery("div", "location-address-street"))
+	street, _ := innerText(node, classQuery("div", "location-address-street"))
 	city, _ := innerText(node, classQuery("span", "location-address-city"))
 	state, _ := innerText(node, classQuery("span", "location-address-state"))
 	zip, _ := innerText(node, classQuery("span", "location-address-zip"))
 	phone, _ := innerText(node, classQuery("a", "location-phone tel"))
 	return Location{
-		StreetAddress: streetAddress,
-		City:          city,
-		State:         state,
-		Zip:           zip,
-		Phone:         phone,
+		Address: Address{
+			Street: street,
+			City:   city,
+			State:  state,
+			Zip:    zip,
+		},
+		Phone: phone,
 	}, true
 }
