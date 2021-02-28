@@ -165,10 +165,10 @@ func (tripleDipper TripleDipper) form(doc *html.Node) (*url.Values, error) {
 	form := &url.Values{}
 	csrfToken, err := parseCSRFToken(doc)
 	if err != nil {
-		return nil, fmt.Errorf("adding CSRF token to cart: %v", err)
+		return nil, fmt.Errorf("adding CSRF token to form: %v", err)
 	}
-
 	form.Add("_csrf", csrfToken)
+
 	for i, dipper := range tripleDipper.Dippers {
 		if !dipper.Permitted() {
 			return nil, fmt.Errorf("dipper %d is not permitted", i)
@@ -176,14 +176,14 @@ func (tripleDipper TripleDipper) form(doc *html.Node) (*url.Values, error) {
 
 		itemID, err := dipper.Item.ParseID(doc, i)
 		if err != nil {
-			return nil, fmt.Errorf("adding Item to cart: %v", err)
+			return nil, fmt.Errorf("adding Item to form: %v", err)
 		}
 		form.Add("selectedIds", itemID)
 
 		for _, extra := range dipper.Extras {
 			extraID, err := extra.ParseID(doc, itemID)
 			if err != nil {
-				return nil, fmt.Errorf("adding Extra to cart: %v", err)
+				return nil, fmt.Errorf("adding Extra to form: %v", err)
 			}
 			form.Add("selectedIds", extraID)
 		}
