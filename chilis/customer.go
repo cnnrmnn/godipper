@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 type Customer struct {
@@ -55,6 +57,21 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (t time.Time, err 
 // valid returns true if the customer's phone and email are valid.
 func (c Customer) valid() bool {
 	return validPhone(c.Phone) && validEmail(c.Email)
+}
+
+// parseTotal returns a map with the order's subtotal and estimated tax
+func parseTotal(doc *html.Node) (map[string]string, error) {
+	subtotal, err := innerText(doc, classQuery("div", "cost js-subtotal"))
+	if err != nil {
+		return nil, fmt.Errorf("parsing subtotal: %v", err)
+	}
+	// Slightly complex query in raw XPath
+	q := "//tr[@id='pickup-tax-payment]/td[2]/div"
+	tax, err := innerText(doc, q)
+	return map[string]string{
+		"subtotal": subtotal,
+		"tax":      tax,
+	}, nil
 }
 
 // validPhone returns true if the given string has 10 digit runes.
