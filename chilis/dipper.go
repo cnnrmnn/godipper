@@ -192,15 +192,9 @@ func (tripleDipper TripleDipper) form(doc *html.Node) (*url.Values, error) {
 }
 
 // Cart adds the TripleDipper to the cart given a session cookie.
-func (tripleDipper TripleDipper) Cart(session *http.Cookie) error {
-	jar, err := createJar(session)
-	if err != nil {
-		fmt.Errorf("creating CookieJar for cart request: %v", err)
-	}
-	client := &http.Client{Jar: jar}
-
+func (tripleDipper TripleDipper) Cart(clt *http.Client) error {
 	u := "https://www.chilis.com/menu/appetizers/triple-dipper"
-	doc, err := parsePage(client, u)
+	doc, err := parsePage(clt, u)
 	if err != nil {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
@@ -210,7 +204,7 @@ func (tripleDipper TripleDipper) Cart(session *http.Cookie) error {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
 
-	resp, err := client.PostForm(u, *form)
+	resp, err := clt.PostForm(u, *form)
 	if err != nil {
 		return fmt.Errorf("posting cart request: %v", err)
 	}

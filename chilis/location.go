@@ -53,49 +53,38 @@ func NearestLocationID(lat, lng string) (string, error) {
 	return id, err
 }
 
-// SetLocation sets the Chili's location for a new session and returns the new
-// session cookie.
-func SetLocation(id string) (*http.Cookie, error) {
-	session, err := startSession()
+// SetLocation sets the Chili's location for a new session and returns an HTTP
+// client for future requests.
+func SetLocation(id string) (*http.Client, error) {
+	client, err := startSession()
 	if err != nil {
 		return nil, err
 	}
-	client := http.DefaultClient
+	u := fmt.Sprintf("https://www.chilis.com/order?rid=%s", id)
 
-	req, err := http.NewRequest("GET", "https://www.chilis.com/order", nil)
-	if err != nil {
-		err = fmt.Errorf("setting location: %v", err)
-		return nil, err
-	}
-	req.AddCookie(session)
-	query := url.Values{
-		"rid": []string{id},
-	}
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := client.Do(req)
+	resp, err := client.Get(u)
 	if err != nil {
 		return nil, fmt.Errorf("setting location: %v", err)
 	}
 	resp.Body.Close()
 
-	return session, nil
+	return client, nil
 }
 
-// startSession starts a Chili's session and returns the new session cookie.
-// Unfortunately, the first request (before the session cookie is set) can't set
-// the session's location.
-func startSession() (*http.Cookie, error) {
-	resp, err := http.Get("https://www.chilis.com")
+// startSession starts a Chili's session and returns an HTTP client for future
+// requests. Unfortunately, the first request (before the session cookie is
+// set) can't set the session's location.
+func startSession() (*http.Client, error) {
+	jar, err := createJar()
 	if err != nil {
 		return nil, fmt.Errorf("starting session: %v", err)
 	}
-	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "SESSION" {
-			return cookie, nil
-		}
+	client := &http.Client{Jar: jar}
+	_, err = client.Get("https://www.chilis.com")
+	if err != nil {
+		return nil, fmt.Errorf("starting session: %v", err)
 	}
-	return nil, errors.New("failed to find session cookie")
+	return client, nil
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
