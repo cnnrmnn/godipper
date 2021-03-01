@@ -50,7 +50,7 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("pickupDate", date)
 	form.Add("deliveryTime", time)
 	form.Add("pickupTime", time)
-	tid := parseTransactionID(doc)
+	tid, err := parseTransactionID(doc)
 	if err != nil {
 		return nil, fmt.Errorf("creating checkout form: %v", err)
 	}
@@ -139,7 +139,7 @@ func parseASAP(doc *html.Node) (date, time string, err error) {
 // parseTransactionID returns the transaction ID associated with the checkout
 // form.
 func parseTransactionID(doc *html.Node) (string, error) {
-	input, err := findOne(node, attrQuery("input", "id", "transactionId"))
+	input, err := findOne(doc, attrQuery("input", "id", "transactionId"))
 	if err != nil {
 		return "", fmt.Errorf("parsing transaction ID: %v", err)
 	}
