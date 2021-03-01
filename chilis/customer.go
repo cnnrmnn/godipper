@@ -21,6 +21,42 @@ type Customer struct {
 	Email     string  `json:"email"`
 }
 
+// Checkout submits the customer's information and returns a map with the order
+// subtotal, tax, and estimated delivery time.
+func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
+	u := "https://www.chilis.com/order/pickup"
+	doc, err := parsePage(clt, u)
+	if err != nil {
+		return nil, fmt.Errorf("fetching delivery information: %v", err)
+	}
+
+	subtotal, tax, err := parseTotal(doc)
+	if err != nil {
+		return nil, fmt.Errorf("parsing order total: %v", err)
+	}
+
+	form, err := c.form(doc)
+	if err != nil {
+		return nil, fmt.Errorf("building checkout request: %v", err)
+	}
+
+	t, err := c.deliveryTime(clt, form.Get("_csrf"))
+	if err != nil {
+		return nil, fmt.Errorf("getting delivery time: %v", err)
+	}
+
+	_, err = clt.PostForm(u, form)
+	if err != nil {
+		return nil, fmt.Errorf("posting checkout request: %v", err)
+	}
+
+	return map[string]string{
+		"subtotal":     subtotal,
+		"tax":          tax,
+		"deliveryTime": t.Format(time.RFC3339),
+	}, nil
+}
+
 // form adds all of the customer's information to a form map with the default
 // values for every checkout request
 func (c Customer) form(doc *html.Node) (url.Values, error) {
