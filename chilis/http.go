@@ -1,6 +1,7 @@
 package chilis
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
@@ -42,4 +43,15 @@ func createClient(session *http.Cookie) (*http.Client, error) {
 		return nil, fmt.Errorf("creating client: %v", err)
 	}
 	return &http.Client{Jar: jar}, err
+}
+
+// sessionID finds and returns the value of the session cookie given an HTTP
+// client.
+func sessionID(client *http.Client) (string, error) {
+	for _, cookie := range client.Jar.Cookies() {
+		if cookie.Name == "SESSION" {
+			return cookie.Value, nil
+		}
+	}
+	return "", errors.New("failed to find session cookie")
 }
