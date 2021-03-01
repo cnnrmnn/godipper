@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
 )
 
@@ -72,6 +73,30 @@ func parseTotal(doc *html.Node) (map[string]string, error) {
 		"subtotal": subtotal,
 		"tax":      tax,
 	}, nil
+}
+
+// parseASAP parses and returns the ASAP values for the date and time fields
+// in the checkout form.
+func parseASAP(doc *html.Node) (date, time string, err error) {
+	con, err := findOne(doc, classQuery("div", "delivery-time-group"))
+	if err != nil {
+		return date, time, fmt.Errorf("parsing ASAP delivery: %v", err)
+	}
+	// Slightly complicated XPath query
+	dq := "/div/select[@id='delivery-date']/option"
+	dopt, err := findOne(con, dq)
+	if err != nil {
+		return date, time, fmt.Errorf("parsing ASAP delivery date: %v", err)
+	}
+	date = htmlquery.SelectAttr(dopt, "value")
+	// Slightly complicated XPath query
+	tq := "/div/select[@id='delivery-time']/option"
+	topt, err := findOne(con, tq)
+	if err != nil {
+		return date, time, fmt.Errorf("parsing ASAP delivery time: %v", err)
+	}
+	time = htmlquery.SelectAttr(topt, "value")
+	return date, time, nil
 }
 
 // defaultForm returns a map with values used for every checkout request.
