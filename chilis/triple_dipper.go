@@ -29,7 +29,7 @@ func (td TripleDipper) Cart(clt *http.Client) error {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
 
-	resp, err := clt.PostForm(tdURL, *form)
+	resp, err := clt.PostForm(tdURL, form)
 	if err != nil {
 		return fmt.Errorf("posting cart request: %v", err)
 	}
@@ -48,8 +48,8 @@ func (td TripleDipper) Cart(clt *http.Client) error {
 
 // form checks if the TripleDipper is permitted and adds all of its components'
 // Chili's IDs and a CSRF token to the given form Values map.
-func (td TripleDipper) form(doc *html.Node) (*url.Values, error) {
-	form := &url.Values{}
+func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
+	form := url.Values{}
 	csrf, err := parseCSRFToken(doc)
 	if err != nil {
 		return nil, fmt.Errorf("adding CSRF token to form: %v", err)
