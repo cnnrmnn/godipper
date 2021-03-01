@@ -55,6 +55,11 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 		return nil, fmt.Errorf("creating checkout form: %v", err)
 	}
 	form.Add("inAuthData.transactionId", tid)
+	csrf, err := parseCSRFToken(doc)
+	if err != nil {
+		return nil, fmt.Errorf("creating checkout form: %v", err)
+	}
+	form.Add("_csrf", csrf)
 	return form, nil
 }
 
