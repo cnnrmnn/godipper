@@ -1,5 +1,15 @@
 package chilis
 
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
+)
+
 type Customer struct {
 	Address   Address `json:"address"`
 	FirstName string  `json:"firstName"`
@@ -35,4 +45,38 @@ func validEmail(email string) bool {
 
 func (customer Customer) Valid() bool {
 	return validPhone(customer.Phone) && validEmail(customer.Email)
+}
+
+// DeliveryTime returns an estimated delivery time or an error if the customer's
+// address is out of range.
+func (c Customer) deliveryTime(clt *http.Client, csrf string) (t time.Time, err error) {
+	u := "https://www.chilis.com/order/delivery/estimate"
+	form := url.Values{}
+	form.Add("_csrf", csrf)
+	// Delivery estimate form requires this strange address format.
+	form.Add("deliveryAddress", c.Address.Chilis())
+	resp, err := clt.PostForm(u, form)
+	if err != nil {
+		return t, fmt.Errorf("fetching delivery estimate: %v", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return t, fmt.Errorf("reading delivery estimate response: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var estimate *map[string]string
+	err = json.Unmarshal(body, estimate)
+	if err != nil {
+		return t, fmt.Errorf("parsing delivery estimate response: %v", err)
+	}
+	tstr, ok := (*estimate)["delivery_time"]
+	if !ok {
+		return t, errors.New("address is out of range")
+	}
+	t, err = time.Parse(time.RFC3339, tstr)
+	if err != nil {
+		return t, fmt.Errorf("parsing delivery time estimate: %v", err)
+	}
+	return t, nil
 }
