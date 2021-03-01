@@ -3,6 +3,7 @@ package chilis
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
@@ -54,6 +55,21 @@ func innerText(node *html.Node, query string) (string, error) {
 	}
 	innerText := htmlquery.InnerText(element)
 	return innerText, nil
+}
+
+// parsePage parses and returns the root node of an HTML document at the given
+// url
+func parsePage(clt *http.Client, u string) (*html.Node, error) {
+	resp, err := clt.Get(u)
+	if err != nil {
+		return nil, fmt.Errorf("fetching HTML at %s: %v", err)
+	}
+	defer resp.Body.Close()
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("parsing HTML at %s: %v", err)
+	}
+	return doc, nil
 }
 
 // parseCSRFToken parses and returns the CSRF token given any Chili's form

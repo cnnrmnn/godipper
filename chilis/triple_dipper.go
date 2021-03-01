@@ -15,11 +15,10 @@ type TripleDipper struct {
 	Dippers [3]Dipper
 }
 
-var tdURL = "https://www.chilis.com/menu/appetizers/triple-dipper"
-
 // Cart adds the TripleDipper to the cart given a session cookie.
 func (td TripleDipper) Cart(clt *http.Client) error {
-	doc, err := parsePage(clt)
+	u := "https://www.chilis.com/menu/appetizers/triple-dipper"
+	doc, err := parsePage(clt, u)
 	if err != nil {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
@@ -29,7 +28,7 @@ func (td TripleDipper) Cart(clt *http.Client) error {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
 
-	resp, err := clt.PostForm(tdURL, form)
+	resp, err := clt.PostForm(u, form)
 	if err != nil {
 		return fmt.Errorf("posting cart request: %v", err)
 	}
@@ -76,20 +75,4 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 		}
 	}
 	return form, nil
-}
-
-// parsePage parses the Triple Dipper page and returns its root node given a
-// session cookie.
-func parsePage(clt *http.Client) (*html.Node, error) {
-	resp, err := clt.Get(tdURL)
-	if err != nil {
-		return nil, fmt.Errorf("fetching Triple Dipper page: %v", err)
-	}
-	defer resp.Body.Close()
-
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("parsing Triple Dipper page: %v", err)
-	}
-	return doc, nil
 }
