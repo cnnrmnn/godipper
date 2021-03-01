@@ -74,6 +74,22 @@ func parseTotal(doc *html.Node) (map[string]string, error) {
 	}, nil
 }
 
+// defaultForm returns a map with values used for every checkout request.
+func defaultForm() (form url.Values) {
+	// Writing out string slice literals is annoying.
+	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
+	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
+	form.Add("inAuthData.collectorFlags", "34549755")
+	form.Add("inAuthData.enabled", "true")
+	form.Add("deliveryToggle", "on")
+	form.Add("orderMode", "delivery")
+	form.Add("deviceType", "web")
+	form.Add("payment", "online")
+	form.Add("silverwareOptIn", "true")
+	form.Add("smsOptIn", "true")
+	return form
+}
+
 // validPhone returns true if the given string has 10 digit runes.
 func validPhone(phone string) bool {
 	n := 0
