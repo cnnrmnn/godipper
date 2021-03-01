@@ -111,22 +111,22 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (t time.Time, err 
 	if err != nil {
 		return t, fmt.Errorf("fetching delivery estimate: %v", err)
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return t, fmt.Errorf("reading delivery estimate response: %v", err)
 	}
-	defer resp.Body.Close()
 
-	var estimate *map[string]string
-	err = json.Unmarshal(body, estimate)
+	var decoded interface{}
+	err = json.Unmarshal(body, &decoded)
 	if err != nil {
 		return t, fmt.Errorf("parsing delivery estimate response: %v", err)
 	}
-	tstr, ok := (*estimate)["delivery_time"]
+	tint, ok := decoded.(map[string]interface{})["delivery_time"]
 	if !ok {
 		return t, errors.New("address is out of range")
 	}
-	t, err = time.Parse(time.RFC3339, tstr)
+	t, err = time.Parse(time.RFC3339, tint.(string))
 	if err != nil {
 		return t, fmt.Errorf("parsing delivery time estimate: %v", err)
 	}
@@ -145,7 +145,7 @@ func parseTotal(doc *html.Node) (string, string, error) {
 		return "", "", fmt.Errorf("parsing subtotal: %v", err)
 	}
 	// Slightly complex query in raw XPath
-	q := "//tr[@id='pickup-tax-payment]/td[2]/div"
+	q := "//tr[@id='pickup-tax-payment']/td[2]/div"
 	tax, err := innerText(doc, q)
 	if err != nil {
 		return "", "", fmt.Errorf("parsing tax: %v", err)
@@ -156,7 +156,8 @@ func parseTotal(doc *html.Node) (string, string, error) {
 // parseASAP parses and returns the ASAP values for the date and time fields
 // in the checkout form.
 func parseASAP(doc *html.Node) (date, time string, err error) {
-	con, err := findOne(doc, classQuery("div", "delivery-time-group"))
+	q := attrQuery("div", "id", "delivery-time-group")
+	con, err := findOne(doc, q)
 	if err != nil {
 		return date, time, fmt.Errorf("parsing ASAP delivery: %v", err)
 	}
