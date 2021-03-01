@@ -21,6 +21,38 @@ type Customer struct {
 	Email     string  `json:"email"`
 }
 
+// form adds all of the customer's information to a form map with the default
+// values for every checkout request
+func (c Customer) form(doc *html.Node) (url.Values, error) {
+	form := url.Values{}
+	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
+	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
+	form.Add("inAuthData.collectorFlags", "34549755")
+	form.Add("inAuthData.enabled", "true")
+	form.Add("deliveryToggle", "on")
+	form.Add("orderMode", "delivery")
+	form.Add("deviceType", "web")
+	form.Add("payment", "online")
+	form.Add("silverwareOptIn", "true")
+	form.Add("smsOptIn", "true")
+	form.Add("deliveryAddress", c.Address.String())
+	form.Add("deliveryAddress2", c.Address.Unit)
+	form.Add("firstName", c.FirstName)
+	form.Add("lastName", c.LastName)
+	form.Add("contactPhone", c.Phone)
+	form.Add("email", c.Email)
+	date, time, err := parseASAP(doc)
+	if err != nil {
+		return nil, fmt.Errorf("creating checkout form: %v", err)
+	}
+	// Chili's inexplicably requires all of these fields.
+	form.Add("deliveryDate", date)
+	form.Add("pickupDate", date)
+	form.Add("deliveryTime", time)
+	form.Add("pickupTime", time)
+	return form, nil
+}
+
 // deliveryTime returns an estimated delivery time or an error if the customer's
 // address is out of range.
 func (c Customer) deliveryTime(clt *http.Client, csrf string) (t time.Time, err error) {
@@ -97,22 +129,6 @@ func parseASAP(doc *html.Node) (date, time string, err error) {
 	}
 	time = htmlquery.SelectAttr(topt, "value")
 	return date, time, nil
-}
-
-// defaultForm returns a map with values used for every checkout request.
-func defaultForm() (form url.Values) {
-	// Writing out string slice literals is annoying.
-	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
-	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
-	form.Add("inAuthData.collectorFlags", "34549755")
-	form.Add("inAuthData.enabled", "true")
-	form.Add("deliveryToggle", "on")
-	form.Add("orderMode", "delivery")
-	form.Add("deviceType", "web")
-	form.Add("payment", "online")
-	form.Add("silverwareOptIn", "true")
-	form.Add("smsOptIn", "true")
-	return form
 }
 
 // validPhone returns true if the given string has 10 digit runes.
