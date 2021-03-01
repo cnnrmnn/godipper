@@ -98,18 +98,18 @@ func (c Customer) valid() bool {
 }
 
 // parseTotal returns a map with the order's subtotal and estimated tax
-func parseTotal(doc *html.Node) (map[string]string, error) {
+func parseTotal(doc *html.Node) (string, string, error) {
 	subtotal, err := innerText(doc, classQuery("div", "cost js-subtotal"))
 	if err != nil {
-		return nil, fmt.Errorf("parsing subtotal: %v", err)
+		return "", "", fmt.Errorf("parsing subtotal: %v", err)
 	}
 	// Slightly complex query in raw XPath
 	q := "//tr[@id='pickup-tax-payment]/td[2]/div"
 	tax, err := innerText(doc, q)
-	return map[string]string{
-		"subtotal": subtotal,
-		"tax":      tax,
-	}, nil
+	if err != nil {
+		return "", "", fmt.Errorf("parsing tax: %v", err)
+	}
+	return subtotal, tax, nil
 }
 
 // parseASAP parses and returns the ASAP values for the date and time fields
