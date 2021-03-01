@@ -23,3 +23,11 @@ func createJar(session *http.Cookie) (*cookiejar.Jar, error) {
 	jar.SetCookies(u, []*http.Cookie{session})
 	return jar, nil
 }
+
+func createClient(session *http.Cookie) (*http.Client, error) {
+	jar, err := createJar(session)
+	if err != nil {
+		return nil, fmt.Errorf("creating client: %v", err)
+	}
+	return &http.Client{Jar: jar}, err
+}
