@@ -10,6 +10,9 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+// This should never return an error.
+var chilisUrl, _ = url.Parse("https://www.chilis.com")
+
 // createJar creates and returns a cookie jar with secure options (public
 // suffix list set)
 func createJar() (*cookiejar.Jar, error) {
@@ -27,18 +30,14 @@ func createSessionJar(session *http.Cookie) (*cookiejar.Jar, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating session cookie jar: %v")
 	}
-	u, err := url.Parse("https://www.chilis.com")
-	if err != nil {
-		return nil, fmt.Errorf("creating session cookie jar: %v", err)
-	}
-	jar.SetCookies(u, []*http.Cookie{session})
+	jar.SetCookies(chilisUrl, []*http.Cookie{session})
 	return jar, nil
 }
 
-// createClient creates and returns a client with a jar with the given session
+// CreateClient creates and returns a client with a jar with the given session
 // cookie in it.
 func createClient(session *http.Cookie) (*http.Client, error) {
-	jar, err := createJar(session)
+	jar, err := createSessionJar(session)
 	if err != nil {
 		return nil, fmt.Errorf("creating client: %v", err)
 	}
@@ -48,7 +47,7 @@ func createClient(session *http.Cookie) (*http.Client, error) {
 // sessionID finds and returns the value of the session cookie given an HTTP
 // client.
 func sessionID(client *http.Client) (string, error) {
-	for _, cookie := range client.Jar.Cookies() {
+	for _, cookie := range client.Jar.Cookies(chilisUrl) {
 		if cookie.Name == "SESSION" {
 			return cookie.Value, nil
 		}
