@@ -19,6 +19,7 @@ type Customer struct {
 	LastName  string  `json:"lastName"`
 	Phone     string  `json:"phone"`
 	Email     string  `json:"email"`
+	Notes     string  `json:"notes"`
 }
 
 // Checkout submits the customer's information and returns a map with the order
@@ -77,6 +78,7 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("lastName", c.LastName)
 	form.Add("contactPhone", c.Phone)
 	form.Add("email", c.Email)
+	form.Add("deliveryAddlNotes", c.Notes)
 	date, time, err := parseASAP(doc)
 	if err != nil {
 		return nil, fmt.Errorf("creating checkout form: %v", err)
