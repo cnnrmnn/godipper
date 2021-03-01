@@ -50,6 +50,11 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("pickupDate", date)
 	form.Add("deliveryTime", time)
 	form.Add("pickupTime", time)
+	tid := parseTransactionID(doc)
+	if err != nil {
+		return nil, fmt.Errorf("creating checkout form: %v", err)
+	}
+	form.Add("inAuthData.transactionId", tid)
 	return form, nil
 }
 
@@ -129,6 +134,16 @@ func parseASAP(doc *html.Node) (date, time string, err error) {
 	}
 	time = htmlquery.SelectAttr(topt, "value")
 	return date, time, nil
+}
+
+// parseTransactionID returns the transaction ID associated with the checkout
+// form.
+func parseTransactionID(doc *html.Node) (string, error) {
+	input, err := findOne(node, attrQuery("input", "id", "transactionId"))
+	if err != nil {
+		return "", fmt.Errorf("parsing transaction ID: %v", err)
+	}
+	return htmlquery.SelectAttr(input, "value"), nil
 }
 
 // validPhone returns true if the given string has 10 digit runes.
