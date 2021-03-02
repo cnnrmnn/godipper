@@ -23,8 +23,7 @@ type PaymentMethod struct {
 
 func (pm *PaymentMethod) Order(sid string) (Location, error) {
 	var loc Location
-	err := pm.validate()
-	if err != nil {
+	if err := pm.validate(); err != nil {
 		return loc, fmt.Errorf("creating order: %w", err)
 	}
 	u := "https://www.chilis.com/order/payment"
@@ -91,12 +90,12 @@ func (pm *PaymentMethod) validate() error {
 		Month:  pm.Month,
 		Year:   pm.Year,
 	}
-	err := card.Validate(true)
-	if err != nil {
+
+	if err := card.Validate(true); err != nil {
 		return err
 	}
-	err = card.Method()
-	if err != nil {
+
+	if err := card.Method(); err != nil {
 		return err
 	}
 	s := card.Company.Short
