@@ -49,12 +49,13 @@ func findOne(node *html.Node, query string) (*html.Node, error) {
 // innerText finds the first HTML element with the given name and class
 // attribute and returns its inner text.
 func innerText(node *html.Node, query string) (string, error) {
+	var it string
 	element, err := findOne(node, query)
 	if err != nil {
-		return "", fmt.Errorf("parsing inner text: %v", err)
+		return it, fmt.Errorf("parsing inner text: %w", err)
 	}
-	innerText := htmlquery.InnerText(element)
-	return innerText, nil
+	it = htmlquery.InnerText(element)
+	return it, nil
 }
 
 // parsePage parses and returns the root node of an HTML document at the given
@@ -62,12 +63,12 @@ func innerText(node *html.Node, query string) (string, error) {
 func parsePage(clt *http.Client, u string) (*html.Node, error) {
 	resp, err := clt.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("fetching HTML at %s: %v", err)
+		return nil, fmt.Errorf("fetching HTML at %s: %w", err)
 	}
 	defer resp.Body.Close()
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("parsing HTML at %s: %v", err)
+		return nil, fmt.Errorf("parsing HTML at %s: %w", err)
 	}
 	return doc, nil
 }
@@ -75,9 +76,11 @@ func parsePage(clt *http.Client, u string) (*html.Node, error) {
 // parseCSRFToken parses and returns the CSRF token given any Chili's form
 // page.
 func parseCSRFToken(node *html.Node) (string, error) {
+	var csrf string
 	input, err := findOne(node, attrQuery("input", "name", "_csrf"))
 	if err != nil {
-		return "", fmt.Errorf("parsing CSRF token: %v", err)
+		return csrf, fmt.Errorf("parsing CSRF token: %w", err)
 	}
-	return htmlquery.SelectAttr(input, "value"), nil
+	csrf = htmlquery.SelectAttr(input, "value")
+	return csrf, nil
 }

@@ -20,12 +20,13 @@ type Location struct {
 // NearestLocationID returns the ID of the nearest location that is in proximity
 // of the given coordinates.
 func NearestLocationID(lat, lng string) (string, error) {
+	var id string
 	client := http.DefaultClient
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/locations/results", nil)
 	if err != nil {
-		err = fmt.Errorf("creating locations request: %v", err)
-		return "", err
+		err = fmt.Errorf("creating locations request: %w", err)
+		return id, err
 	}
 
 	query := url.Values{
@@ -36,15 +37,15 @@ func NearestLocationID(lat, lng string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		err = fmt.Errorf("fetching location: %v", err)
-		return "", err
+		err = fmt.Errorf("fetching location: %w", err)
+		return id, err
 	}
 	defer resp.Body.Close()
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		err = fmt.Errorf("parsing locations html: %v", err)
-		return "", err
+		err = fmt.Errorf("parsing locations html: %w", err)
+		return id, err
 	}
 	id, ok := parseNearestID(doc)
 	if !ok {
@@ -64,7 +65,7 @@ func SetLocation(id string) (*http.Client, error) {
 
 	resp, err := client.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("setting location: %v", err)
+		return nil, fmt.Errorf("setting location: %w", err)
 	}
 	resp.Body.Close()
 
@@ -77,12 +78,12 @@ func SetLocation(id string) (*http.Client, error) {
 func startSession() (*http.Client, error) {
 	jar, err := createJar()
 	if err != nil {
-		return nil, fmt.Errorf("starting session: %v", err)
+		return nil, fmt.Errorf("starting session: %w", err)
 	}
 	client := &http.Client{Jar: jar}
 	_, err = client.Get("https://www.chilis.com")
 	if err != nil {
-		return nil, fmt.Errorf("starting session: %v", err)
+		return nil, fmt.Errorf("starting session: %w", err)
 	}
 	return client, nil
 }
@@ -90,16 +91,17 @@ func startSession() (*http.Client, error) {
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, bool) {
+	var id string
 	nearest, err := findOne(doc, classQuery("div", "location"))
 	if err != nil {
-		return "", false
+		return id, false
 	}
 	_, err = findOne(nearest, classQuery("span", "delivery icon-doordash"))
 	if err != nil {
-		return "", false
+		return id, false
 	}
 
-	id := htmlquery.SelectAttr(nearest, "id")[9:]
+	id = htmlquery.SelectAttr(nearest, "id")[9:]
 	if id == "" {
 		return id, false
 	}
@@ -111,7 +113,7 @@ func parseLocation(doc *html.Node) (Location, error) {
 	var loc Location
 	node, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
-		return loc, fmt.Errorf("parsing location: %v")
+		return loc, fmt.Errorf("parsing location: %w")
 	}
 	// Ignore errors after locating address wrapper.
 	name, _ := innerText(node, classQuery("div", "location-name"))

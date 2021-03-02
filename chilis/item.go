@@ -69,14 +69,16 @@ func (it Item) Permitted(e Extra) bool {
 
 // ParseID parses and returns an Item's Chili's ID given its selection index.
 func (it Item) ParseID(node *html.Node, i int) (string, error) {
+	var id string
 	text := fmt.Sprintf("Selection %d", i+1)
 	label, err := findOne(node, textQuery("label", text))
 	if err != nil {
-		return "", fmt.Errorf("parsing Item's Chili's ID: %v", err)
+		return id, fmt.Errorf("parsing Item's Chili's ID: %w", err)
 	}
 	opt, err := findOne(label.Parent, textQuery("option", it.Name()))
 	if err != nil {
-		return "", fmt.Errorf("parsing Item's Chili's ID: %v", err)
+		return id, fmt.Errorf("parsing Item's Chili's ID: %w", err)
 	}
-	return htmlquery.SelectAttr(opt, "value"), nil
+	id = htmlquery.SelectAttr(opt, "value")
+	return id, nil
 }

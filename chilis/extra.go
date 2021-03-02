@@ -29,16 +29,18 @@ func (e Extra) Name() string {
 
 // ParseID parses and returns an Extra's Chili's ID given its Item's Chili's ID.
 func (e Extra) ParseID(node *html.Node, iid string) (string, error) {
+	var eid string
 	// Groups of extras for the given item ID
 	grps, err := find(node, attrQuery("div", "data-related", iid))
 	if err != nil {
-		return "", fmt.Errorf("parsing Extra's Chili's ID: %v", err)
+		return eid, fmt.Errorf("parsing Extra's Chili's ID: %w", err)
 	}
 	for _, grp := range grps {
 		opt, err := findOne(grp, textQuery("option", e.Name()))
 		if err == nil {
-			return htmlquery.SelectAttr(opt, "value"), nil
+			eid = htmlquery.SelectAttr(opt, "value")
+			return eid, nil
 		}
 	}
-	return "", errors.New("parsing Extra's Chili's ID")
+	return eid, errors.New("parsing Extra's Chili's ID")
 }

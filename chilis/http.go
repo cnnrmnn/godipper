@@ -19,7 +19,7 @@ func createJar() (*cookiejar.Jar, error) {
 	options := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(options)
 	if err != nil {
-		return nil, fmt.Errorf("creating cookie jar: %v")
+		return nil, fmt.Errorf("creating cookie jar: %w")
 	}
 	return jar, nil
 }
@@ -28,7 +28,7 @@ func createJar() (*cookiejar.Jar, error) {
 func createSessionJar(session *http.Cookie) (*cookiejar.Jar, error) {
 	jar, err := createJar()
 	if err != nil {
-		return nil, fmt.Errorf("creating session cookie jar: %v")
+		return nil, fmt.Errorf("creating session cookie jar: %w")
 	}
 	jar.SetCookies(chilisUrl, []*http.Cookie{session})
 	return jar, nil
@@ -39,7 +39,7 @@ func createSessionJar(session *http.Cookie) (*cookiejar.Jar, error) {
 func createClient(session *http.Cookie) (*http.Client, error) {
 	jar, err := createSessionJar(session)
 	if err != nil {
-		return nil, fmt.Errorf("creating client: %v", err)
+		return nil, fmt.Errorf("creating client: %w", err)
 	}
 	return &http.Client{Jar: jar}, err
 }
@@ -47,10 +47,12 @@ func createClient(session *http.Cookie) (*http.Client, error) {
 // sessionID finds and returns the value of the session cookie given an HTTP
 // client.
 func sessionID(client *http.Client) (string, error) {
+	var sid string
 	for _, cookie := range client.Jar.Cookies(chilisUrl) {
 		if cookie.Name == "SESSION" {
-			return cookie.Value, nil
+			sid = cookie.Value
+			return sid, nil
 		}
 	}
-	return "", errors.New("failed to find session cookie")
+	return sid, errors.New("failed to find session cookie")
 }
