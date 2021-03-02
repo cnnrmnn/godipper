@@ -112,7 +112,7 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	form := url.Values{}
 	form.Add("_csrf", csrf)
 	// Delivery estimate form requires this strange address format.
-	form.Add("deliveryAddress", c.Address.Chilis())
+	form.Add("deliveryAddress", c.Address.chilis())
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
 		return t, fmt.Errorf("fetching delivery estimate: %v", err)
