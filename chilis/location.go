@@ -16,58 +16,60 @@ type Location struct {
 	Address Address `json:"address"`
 }
 
-// NearestLocationID returns the ID of the nearest location that is in proximity
-// of the given coordinates.
-func NearestLocationID(addr Address) (string, error) {
-	var id string
-	client := http.DefaultClient
-
-	req, err := http.NewRequest("GET", "https://www.chilis.com/locations/results", nil)
+// SetLocation sets the Chili's location for a new session and returns an HTTP
+// client for future requests.
+func SetLocation(addr Address) (*http.Client, error) {
+	clt, err := startSession()
 	if err != nil {
-		err = fmt.Errorf("creating locations request: %v", err)
-		return id, err
+		return nil, fmt.Errorf("setting location: %v", err)
 	}
+	id, err := nearestLocationID(clt, addr)
+	if err != nil {
+		return nil, fmt.Errorf("setting location: %v", err)
+	}
+	u := fmt.Sprintf("https://www.chilis.com/order?rid=%s", id)
 
+	resp, err := clt.Get(u)
+	if err != nil {
+		return nil, fmt.Errorf("setting location: %v", err)
+	}
+	resp.Body.Close()
+
+	return clt, nil
+}
+
+// nearestLocationID returns the ID of the nearest location that is in proximity
+// of the given address.
+func nearestLocationID(clt *http.Client, addr Address) (string, error) {
+	var id string
+
+	u, err := url.Parse("https://www.chilis.com/locations/results")
+	if err != nil {
+		return id, fmt.Errorf("parsing location URL: %v", err)
+	}
 	query := url.Values{
 		"query": []string{addr.String()},
 	}
-	req.URL.RawQuery = query.Encode()
+	u.RawQuery = query.Encode()
+	fmt.Println(u.String())
 
-	resp, err := client.Do(req)
+	resp, err := clt.Get(u.String())
 	if err != nil {
-		err = fmt.Errorf("fetching location: %v", err)
-		return id, err
+		return id, fmt.Errorf("fetching location: %v", err)
 	}
 	defer resp.Body.Close()
+	//	yeh, _ := io.ReadAll(resp.Body)
+	//	fmt.Println(string(yeh))
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		err = fmt.Errorf("parsing locations html: %v", err)
-		return id, err
+		return id, fmt.Errorf("parsing locations html: %v", err)
 	}
 	id, ok := parseNearestID(doc)
 	if !ok {
 		return id, ForbiddenError{"no locations in proximity"}
 	}
 	return id, err
-}
-
-// SetLocation sets the Chili's location for a new session and returns an HTTP
-// client for future requests.
-func SetLocation(id string) (*http.Client, error) {
-	client, err := startSession()
-	if err != nil {
-		return nil, err
-	}
-	u := fmt.Sprintf("https://www.chilis.com/order?rid=%s", id)
-
-	resp, err := client.Get(u)
-	if err != nil {
-		return nil, fmt.Errorf("setting location: %v", err)
-	}
-	resp.Body.Close()
-
-	return client, nil
 }
 
 // startSession starts a Chili's session and returns an HTTP client for future
