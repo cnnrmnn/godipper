@@ -2,7 +2,6 @@ package chilis
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +24,10 @@ type Customer struct {
 // Checkout submits the customer's information and returns a map with the order
 // subtotal, tax, and estimated delivery time.
 func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
+	if err := c.valid(); err != nil {
+		return nil, err
+	}
+
 	u := "https://www.chilis.com/order/pickup"
 	doc, err := parsePage(clt, u)
 	if err != nil {
@@ -127,7 +130,7 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	}
 	tint, ok := decoded.(map[string]interface{})["delivery_time"]
 	if !ok {
-		return t, errors.New("address is out of range")
+		return t, ForbiddenError{"address is out of range"}
 	}
 	t, err = time.Parse(time.RFC3339, tint.(string))
 	if err != nil {
@@ -136,30 +139,41 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	return t, nil
 }
 
-// validPhone returns true if the customer's phone is a string of ten digit
-// runes.
-func (c Customer) validPhone() bool {
+// valid returns an error if any of the customer's fields are invalid.
+func (c Customer) valid() error {
+	if err := c.validPhone(); err != nil {
+		return err
+	}
+	if err := c.validEmail(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validPhone returns an error if the customer's phone isn't a string of ten
+// digit runes.
+func (c Customer) validPhone() error {
 	n := 0
 	for _, digit := range c.Phone {
 		if digit < '0' || digit > '9' {
-			return false
+			return BadRequestError{"phone", c.Phone}
 		}
 		n++
 	}
 	if n != 10 {
-		return false
+		return BadRequestError{"phone", c.Phone}
 	}
-	return true
+	return nil
 }
 
-// validEmail returns true if the customer's email haat least one @ rune.
-func (c Customer) validEmail() bool {
-	for _, c := range c.Email {
-		if c == '@' {
-			return true
+// validEmail returns an error if the customer's email doesn't have an @ rune.
+func (c Customer) validEmail() error {
+	for _, r := range c.Email {
+		if r == '@' {
+			return nil
 		}
 	}
-	return false
+	return BadRequestError{"email", c.Email}
 }
 
 // parseTotal returns a map with the order's subtotal and estimated tax
