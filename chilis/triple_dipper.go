@@ -60,7 +60,7 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 			return nil, BadRequestError{fmt.Sprintf("dipper %d", i+1)}
 		}
 
-		iid, err := d.Item.ParseID(doc, i)
+		iid, err := d.Item.parseID(doc, i)
 		if err != nil {
 			return nil, fmt.Errorf("adding Item to form: %v", err)
 		}

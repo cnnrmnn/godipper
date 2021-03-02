@@ -57,8 +57,8 @@ func (it Item) Name() string {
 	return items[it]
 }
 
-// Permitted returns true if the given Extra is permitted for the Item.
-func (it Item) Permitted(e Extra) bool {
+// permitted returns true if the given Extra is permitted for the Item.
+func (it Item) permitted(e Extra) bool {
 	for _, p := range permitted[it] {
 		if e == p {
 			return true
@@ -67,8 +67,8 @@ func (it Item) Permitted(e Extra) bool {
 	return false
 }
 
-// ParseID parses and returns an Item's Chili's ID given its selection index.
-func (it Item) ParseID(node *html.Node, i int) (string, error) {
+// parseID parses and returns an Item's Chili's ID given its selection index.
+func (it Item) parseID(node *html.Node, i int) (string, error) {
 	var id string
 	text := fmt.Sprintf("Selection %d", i+1)
 	label, err := findOne(node, textQuery("label", text))

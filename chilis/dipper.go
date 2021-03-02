@@ -11,7 +11,7 @@ type Dipper struct {
 // Dipper's item.
 func (d Dipper) permitted() bool {
 	for _, e := range d.Extras {
-		if !d.Item.Permitted(e) {
+		if !d.Item.permitted(e) {
 			return false
 		}
 	}
