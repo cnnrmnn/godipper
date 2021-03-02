@@ -27,8 +27,8 @@ func (e Extra) Name() string {
 	return extras[e]
 }
 
-// ParseID parses and returns an Extra's Chili's ID given its Item's Chili's ID.
-func (e Extra) ParseID(node *html.Node, iid string) (string, error) {
+// parseID parses and returns an Extra's Chili's ID given its Item's Chili's ID.
+func (e Extra) parseID(node *html.Node, iid string) (string, error) {
 	var eid string
 	// Groups of extras for the given item ID
 	grps, err := find(node, attrQuery("div", "data-related", iid))

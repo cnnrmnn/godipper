@@ -67,7 +67,7 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 		form.Add("selectedIds", iid)
 
 		for _, e := range d.Extras {
-			eid, err := e.ParseID(doc, iid)
+			eid, err := e.parseID(doc, iid)
 			if err != nil {
 				return nil, fmt.Errorf("adding Extra to form: %v", err)
 			}
