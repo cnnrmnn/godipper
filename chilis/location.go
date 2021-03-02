@@ -110,17 +110,20 @@ func parseNearestID(doc *html.Node) (string, bool) {
 // parseLocation parses and returns a Location from an order confirmation page.
 func parseLocation(doc *html.Node) (Location, error) {
 	var loc Location
-	node, err := findOne(doc, classQuery("div", "location-address-wrapper"))
+	wrp, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
 		return loc, fmt.Errorf("parsing location: %w")
 	}
-	// Ignore errors after locating address wrapper.
-	name, _ := innerText(node, classQuery("div", "location-name"))
-	street, _ := innerText(node, classQuery("div", "location-address-street"))
-	city, _ := innerText(node, classQuery("span", "location-address-city"))
-	state, _ := innerText(node, classQuery("span", "location-address-state"))
-	zip, _ := innerText(node, classQuery("span", "location-address-zip"))
-	phone, _ := innerText(node, classQuery("a", "location-phone tel"))
+	// Don't use functions that return errors for nil results after wrapper is
+	// located.
+	fo := htmlquery.FindOne
+	it := htmlquery.InnerText
+	name := it(fo(wrp, classQuery("div", "location-name")))
+	street := it(fo(wrp, classQuery("div", "location-address-street")))
+	city := it(fo(wrp, classQuery("span", "location-address-city")))
+	state := it(fo(wrp, classQuery("span", "location-address-state")))
+	zip := it(fo(wrp, classQuery("span", "location-address-zip")))
+	phone := it(fo(wrp, classQuery("a", "location-phone tel")))
 	return Location{
 		Name:  name,
 		Phone: phone,
