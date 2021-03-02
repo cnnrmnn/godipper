@@ -52,7 +52,7 @@ func innerText(node *html.Node, query string) (string, error) {
 	var it string
 	element, err := findOne(node, query)
 	if err != nil {
-		return it, fmt.Errorf("parsing inner text: %w", err)
+		return it, fmt.Errorf("parsing inner text: %v", err)
 	}
 	it = htmlquery.InnerText(element)
 	return it, nil
@@ -63,12 +63,12 @@ func innerText(node *html.Node, query string) (string, error) {
 func parsePage(clt *http.Client, u string) (*html.Node, error) {
 	resp, err := clt.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("fetching HTML at %s: %w", err)
+		return nil, fmt.Errorf("fetching HTML at %s: %v", err)
 	}
 	defer resp.Body.Close()
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("parsing HTML at %s: %w", err)
+		return nil, fmt.Errorf("parsing HTML at %s: %v", err)
 	}
 	return doc, nil
 }
@@ -79,7 +79,7 @@ func parseCSRFToken(node *html.Node) (string, error) {
 	var csrf string
 	input, err := findOne(node, attrQuery("input", "name", "_csrf"))
 	if err != nil {
-		return csrf, fmt.Errorf("parsing CSRF token: %w", err)
+		return csrf, fmt.Errorf("parsing CSRF token: %v", err)
 	}
 	csrf = htmlquery.SelectAttr(input, "value")
 	return csrf, nil

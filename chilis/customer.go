@@ -31,17 +31,17 @@ func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
 	u := "https://www.chilis.com/order/pickup"
 	doc, err := parsePage(clt, u)
 	if err != nil {
-		return nil, fmt.Errorf("fetching delivery information: %w", err)
+		return nil, fmt.Errorf("fetching delivery information: %v", err)
 	}
 
 	subtotal, tax, err := parseTotal(doc)
 	if err != nil {
-		return nil, fmt.Errorf("parsing order total: %w", err)
+		return nil, fmt.Errorf("parsing order total: %v", err)
 	}
 
 	form, err := c.form(doc)
 	if err != nil {
-		return nil, fmt.Errorf("building checkout request: %w", err)
+		return nil, fmt.Errorf("building checkout request: %v", err)
 	}
 
 	t, err := c.deliveryTime(clt, form.Get("_csrf"))
@@ -51,7 +51,7 @@ func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
 
 	_, err = clt.PostForm(u, form)
 	if err != nil {
-		return nil, fmt.Errorf("posting checkout request: %w", err)
+		return nil, fmt.Errorf("posting checkout request: %v", err)
 	}
 
 	return map[string]string{
@@ -84,7 +84,7 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("deliveryAddlNotes", c.Notes)
 	date, time, err := parseASAP(doc)
 	if err != nil {
-		return nil, fmt.Errorf("creating checkout form: %w", err)
+		return nil, fmt.Errorf("creating checkout form: %v", err)
 	}
 	// Chili's inexplicably requires all of these fields.
 	form.Add("deliveryDate", date)
@@ -93,12 +93,12 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("pickupTime", time)
 	tid, err := parseTransactionID(doc)
 	if err != nil {
-		return nil, fmt.Errorf("creating checkout form: %w", err)
+		return nil, fmt.Errorf("creating checkout form: %v", err)
 	}
 	form.Add("inAuthData.transactionId", tid)
 	csrf, err := parseCSRFToken(doc)
 	if err != nil {
-		return nil, fmt.Errorf("creating checkout form: %w", err)
+		return nil, fmt.Errorf("creating checkout form: %v", err)
 	}
 	form.Add("_csrf", csrf)
 	return form, nil
@@ -115,18 +115,18 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	form.Add("deliveryAddress", c.Address.Chilis())
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
-		return t, fmt.Errorf("fetching delivery estimate: %w", err)
+		return t, fmt.Errorf("fetching delivery estimate: %v", err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return t, fmt.Errorf("reading delivery estimate response: %w", err)
+		return t, fmt.Errorf("reading delivery estimate response: %v", err)
 	}
 
 	var decoded interface{}
 	err = json.Unmarshal(body, &decoded)
 	if err != nil {
-		return t, fmt.Errorf("parsing delivery estimate response: %w", err)
+		return t, fmt.Errorf("parsing delivery estimate response: %v", err)
 	}
 	tint, ok := decoded.(map[string]interface{})["delivery_time"]
 	if !ok {
@@ -134,7 +134,7 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	}
 	t, err = time.Parse(time.RFC3339, tint.(string))
 	if err != nil {
-		return t, fmt.Errorf("parsing delivery time estimate: %w", err)
+		return t, fmt.Errorf("parsing delivery time estimate: %v", err)
 	}
 	return t, nil
 }
@@ -181,13 +181,13 @@ func parseTotal(doc *html.Node) (string, string, error) {
 	var subtotal, tax string
 	subtotal, err := innerText(doc, classQuery("div", "cost js-subtotal"))
 	if err != nil {
-		return subtotal, tax, fmt.Errorf("parsing subtotal: %w", err)
+		return subtotal, tax, fmt.Errorf("parsing subtotal: %v", err)
 	}
 	// Slightly complex query in raw XPath
 	q := "//tr[@id='pickup-tax-payment']/td[2]/div"
 	tax, err = innerText(doc, q)
 	if err != nil {
-		return subtotal, tax, fmt.Errorf("parsing tax: %w", err)
+		return subtotal, tax, fmt.Errorf("parsing tax: %v", err)
 	}
 	return subtotal, tax, nil
 }
@@ -199,20 +199,20 @@ func parseASAP(doc *html.Node) (string, string, error) {
 	q := attrQuery("div", "id", "delivery-time-group")
 	con, err := findOne(doc, q)
 	if err != nil {
-		return date, time, fmt.Errorf("parsing ASAP delivery: %w", err)
+		return date, time, fmt.Errorf("parsing ASAP delivery: %v", err)
 	}
 	// Slightly complicated XPath query
 	dq := "/div/select[@id='delivery-date']/option"
 	dopt, err := findOne(con, dq)
 	if err != nil {
-		return date, time, fmt.Errorf("parsing ASAP delivery date: %w", err)
+		return date, time, fmt.Errorf("parsing ASAP delivery date: %v", err)
 	}
 	date = htmlquery.SelectAttr(dopt, "value")
 	// Slightly complicated XPath query
 	tq := "/div/select[@id='delivery-time']/option"
 	topt, err := findOne(con, tq)
 	if err != nil {
-		return date, time, fmt.Errorf("parsing ASAP delivery time: %w", err)
+		return date, time, fmt.Errorf("parsing ASAP delivery time: %v", err)
 	}
 	time = htmlquery.SelectAttr(topt, "value")
 	return date, time, nil
@@ -224,7 +224,7 @@ func parseTransactionID(doc *html.Node) (string, error) {
 	var tid string
 	input, err := findOne(doc, attrQuery("input", "id", "transactionId"))
 	if err != nil {
-		return tid, fmt.Errorf("parsing transaction ID: %w", err)
+		return tid, fmt.Errorf("parsing transaction ID: %v", err)
 	}
 	tid = htmlquery.SelectAttr(input, "value")
 	return tid, nil

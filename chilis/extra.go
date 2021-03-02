@@ -33,7 +33,7 @@ func (e Extra) ParseID(node *html.Node, iid string) (string, error) {
 	// Groups of extras for the given item ID
 	grps, err := find(node, attrQuery("div", "data-related", iid))
 	if err != nil {
-		return eid, fmt.Errorf("parsing Extra's Chili's ID: %w", err)
+		return eid, fmt.Errorf("parsing Extra's Chili's ID: %v", err)
 	}
 	for _, grp := range grps {
 		opt, err := findOne(grp, textQuery("option", e.Name()))

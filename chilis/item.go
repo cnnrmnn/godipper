@@ -73,11 +73,11 @@ func (it Item) ParseID(node *html.Node, i int) (string, error) {
 	text := fmt.Sprintf("Selection %d", i+1)
 	label, err := findOne(node, textQuery("label", text))
 	if err != nil {
-		return id, fmt.Errorf("parsing Item's Chili's ID: %w", err)
+		return id, fmt.Errorf("parsing Item's Chili's ID: %v", err)
 	}
 	opt, err := findOne(label.Parent, textQuery("option", it.Name()))
 	if err != nil {
-		return id, fmt.Errorf("parsing Item's Chili's ID: %w", err)
+		return id, fmt.Errorf("parsing Item's Chili's ID: %v", err)
 	}
 	id = htmlquery.SelectAttr(opt, "value")
 	return id, nil

@@ -24,7 +24,7 @@ func NearestLocationID(lat, lng string) (string, error) {
 
 	req, err := http.NewRequest("GET", "https://www.chilis.com/locations/results", nil)
 	if err != nil {
-		err = fmt.Errorf("creating locations request: %w", err)
+		err = fmt.Errorf("creating locations request: %v", err)
 		return id, err
 	}
 
@@ -36,14 +36,14 @@ func NearestLocationID(lat, lng string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		err = fmt.Errorf("fetching location: %w", err)
+		err = fmt.Errorf("fetching location: %v", err)
 		return id, err
 	}
 	defer resp.Body.Close()
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		err = fmt.Errorf("parsing locations html: %w", err)
+		err = fmt.Errorf("parsing locations html: %v", err)
 		return id, err
 	}
 	id, ok := parseNearestID(doc)
@@ -64,7 +64,7 @@ func SetLocation(id string) (*http.Client, error) {
 
 	resp, err := client.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("setting location: %w", err)
+		return nil, fmt.Errorf("setting location: %v", err)
 	}
 	resp.Body.Close()
 
@@ -77,12 +77,12 @@ func SetLocation(id string) (*http.Client, error) {
 func startSession() (*http.Client, error) {
 	jar, err := createJar()
 	if err != nil {
-		return nil, fmt.Errorf("starting session: %w", err)
+		return nil, fmt.Errorf("starting session: %v", err)
 	}
 	client := &http.Client{Jar: jar}
 	_, err = client.Get("https://www.chilis.com")
 	if err != nil {
-		return nil, fmt.Errorf("starting session: %w", err)
+		return nil, fmt.Errorf("starting session: %v", err)
 	}
 	return client, nil
 }
@@ -112,7 +112,7 @@ func parseLocation(doc *html.Node) (Location, error) {
 	var loc Location
 	wrp, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
-		return loc, fmt.Errorf("parsing location: %w")
+		return loc, fmt.Errorf("parsing location: %v")
 	}
 	// Don't use functions that return errors for nil results after wrapper is
 	// located.

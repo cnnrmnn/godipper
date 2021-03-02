@@ -30,28 +30,28 @@ func (pm *PaymentMethod) Order(sid string) (Location, error) {
 	session := http.Cookie{Name: "SESSION", Value: sid}
 	clt, err := createClient(&session)
 	if err != nil {
-		return loc, fmt.Errorf("creating order client: %w", err)
+		return loc, fmt.Errorf("creating order client: %v", err)
 	}
 	doc, err := parsePage(clt, u)
 	if err != nil {
-		return loc, fmt.Errorf("fetching payment information: %w", err)
+		return loc, fmt.Errorf("fetching payment information: %v", err)
 	}
 	form, err := pm.form(doc)
 	if err != nil {
-		return loc, fmt.Errorf("bulding order request: %w", err)
+		return loc, fmt.Errorf("bulding order request: %v", err)
 	}
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
-		return loc, fmt.Errorf("posting order request: %w", err)
+		return loc, fmt.Errorf("posting order request: %v", err)
 	}
 	defer resp.Body.Close()
 	doc, err = html.Parse(resp.Body)
 	if err != nil {
-		return loc, fmt.Errorf("parsing order response: %w", err)
+		return loc, fmt.Errorf("parsing order response: %v", err)
 	}
 	loc, err = parseLocation(doc)
 	if err != nil {
-		return loc, fmt.Errorf("parsing order response: %w", err)
+		return loc, fmt.Errorf("parsing order response: %v", err)
 	}
 	return loc, err
 }
@@ -70,12 +70,12 @@ func (pm *PaymentMethod) form(doc *html.Node) (url.Values, error) {
 	form.Add("zipcode", pm.Zip)
 	number, err := pm.format()
 	if err != nil {
-		return nil, fmt.Errorf("formatting card number: %w", err)
+		return nil, fmt.Errorf("formatting card number: %v", err)
 	}
 	form.Add("cardNumber", number)
 	csrf, err := parseCSRFToken(doc)
 	if err != nil {
-		return nil, fmt.Errorf("creating order form: %w", err)
+		return nil, fmt.Errorf("creating order form: %v", err)
 	}
 	form.Add("_csrf", csrf)
 	return form, nil
