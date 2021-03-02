@@ -1,7 +1,6 @@
 package chilis
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -49,7 +48,7 @@ func NearestLocationID(lat, lng string) (string, error) {
 	}
 	id, ok := parseNearestID(doc)
 	if !ok {
-		err = errors.New("no locations in proximity")
+		return id, ForbiddenError{"no locations in proximity"}
 	}
 	return id, err
 }
