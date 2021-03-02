@@ -18,7 +18,7 @@ type Location struct {
 
 // NearestLocationID returns the ID of the nearest location that is in proximity
 // of the given coordinates.
-func NearestLocationID(lat, lng string) (string, error) {
+func NearestLocationID(addr Address) (string, error) {
 	var id string
 	client := http.DefaultClient
 
@@ -29,8 +29,7 @@ func NearestLocationID(lat, lng string) (string, error) {
 	}
 
 	query := url.Values{
-		"lat": []string{lat},
-		"lng": []string{lng},
+		"query": []string{addr.String()},
 	}
 	req.URL.RawQuery = query.Encode()
 
