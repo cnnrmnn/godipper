@@ -113,7 +113,8 @@ func (pm *PaymentMethod) validate() error {
 
 // Format returns the card number formatted in Chili's style according to its
 // company. Validate must be called prior to Format or it will fail.
-func (pm *PaymentMethod) format() (f string, err error) {
+func (pm *PaymentMethod) format() (string, error) {
+	var f string
 	c := pm.Number
 	switch pm.Company {
 	case "visa", "mastercard", "discover":
@@ -121,7 +122,7 @@ func (pm *PaymentMethod) format() (f string, err error) {
 	case "americanexpress":
 		f = fmt.Sprintf("%s-%s-%s", c[:4], c[4:10], c[10:])
 	default:
-		return "", errors.New("invalid or unset card company")
+		return f, errors.New("invalid or unset card company")
 	}
 	return f, nil
 }

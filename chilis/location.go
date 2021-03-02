@@ -107,10 +107,11 @@ func parseNearestID(doc *html.Node) (string, bool) {
 }
 
 // parseLocation parses and returns a Location from an order confirmation page.
-func parseLocation(doc *html.Node) (location Location, err error) {
+func parseLocation(doc *html.Node) (Location, error) {
+	var loc Location
 	node, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
-		return location, fmt.Errorf("parsing location: %v")
+		return loc, fmt.Errorf("parsing location: %v")
 	}
 	// Ignore errors after locating address wrapper.
 	name, _ := innerText(node, classQuery("div", "location-name"))
