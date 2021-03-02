@@ -3,8 +3,10 @@ package chilis
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	creditcard "github.com/durango/go-credit-card"
+	"golang.org/x/net/html"
 )
 
 // A PaymentMethod contains credit card data needed to submit an order.
@@ -18,9 +20,34 @@ type PaymentMethod struct {
 	Company string `json:"company"`
 }
 
+// form validates the payment method and adds all of its fields to a form map
+// with default values set.
+func (pm *PaymentMethod) form(doc *html.Node) (url.Values, error) {
+	form := url.Values{}
+	form.Add("paymentMethod", "creditcard")
+	form.Add("orderMode", "delivery")
+	form.Add("cardType", pm.Company)
+	form.Add("cvv", pm.CVV)
+	form.Add("expirationMonth", pm.Month)
+	form.Add("expirationYear", pm.Year)
+	form.Add("nameOnCard", pm.Name)
+	form.Add("zipcode", pm.Zip)
+	number, err := pm.format()
+	if err != nil {
+		return nil, fmt.Errorf("formatting card number: %v", err)
+	}
+	form.Add("cardNumber", number)
+	csrf, err := parseCSRFToken(doc)
+	if err != nil {
+		return nil, fmt.Errorf("creating order form: %v", err)
+	}
+	form.Add("_csrf", csrf)
+	return form, nil
+}
+
 // Validate verifies that the payment method has a valid number and adds the
 // company to the payment method.
-func (pm *PaymentMethod) Validate() error {
+func (pm *PaymentMethod) validate() error {
 	card := creditcard.Card{
 		Number: pm.Number,
 		Cvv:    pm.CVV,
@@ -49,7 +76,7 @@ func (pm *PaymentMethod) Validate() error {
 
 // Format returns the card number formatted in Chili's style according to its
 // company. Validate must be called prior to Format or it will fail.
-func (pm *PaymentMethod) Format() (f string, err error) {
+func (pm *PaymentMethod) format() (f string, err error) {
 	c := pm.Number
 	switch pm.Company {
 	case "visa", "mastercard", "discover":
