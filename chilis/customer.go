@@ -136,9 +136,30 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 	return t, nil
 }
 
-// valid returns true if the customer's phone and email are valid.
-func (c Customer) valid() bool {
-	return validPhone(c.Phone) && validEmail(c.Email)
+// validPhone returns true if the customer's phone is a string of ten digit
+// runes.
+func (c Customer) validPhone() bool {
+	n := 0
+	for _, digit := range c.Phone {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+		n++
+	}
+	if n != 10 {
+		return false
+	}
+	return true
+}
+
+// validEmail returns true if the customer's email haat least one @ rune.
+func (c Customer) validEmail() bool {
+	for _, c := range c.Email {
+		if c == '@' {
+			return true
+		}
+	}
+	return false
 }
 
 // parseTotal returns a map with the order's subtotal and estimated tax
@@ -193,29 +214,4 @@ func parseTransactionID(doc *html.Node) (string, error) {
 	}
 	tid = htmlquery.SelectAttr(input, "value")
 	return tid, nil
-}
-
-// validPhone returns true if the given string has 10 digit runes.
-func validPhone(phone string) bool {
-	n := 0
-	for _, digit := range phone {
-		if digit < '0' || digit > '9' {
-			return false
-		}
-		n++
-	}
-	if n != 10 {
-		return false
-	}
-	return true
-}
-
-// validEmail returns true if the given string has at least one @ rune.
-func validEmail(email string) bool {
-	for _, c := range email {
-		if c == '@' {
-			return true
-		}
-	}
-	return false
 }
