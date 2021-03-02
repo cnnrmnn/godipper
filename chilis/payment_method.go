@@ -3,6 +3,7 @@ package chilis
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	creditcard "github.com/durango/go-credit-card"
@@ -18,6 +19,42 @@ type PaymentMethod struct {
 	Name    string `json:"name"`
 	Zip     string `json:"zip`
 	Company string `json:"company"`
+}
+
+func (pm *PaymentMethod) Order(sid string) (Location, error) {
+	var loc Location
+	err := pm.validate()
+	if err != nil {
+		return loc, fmt.Errorf("creating order: %v", err)
+	}
+	u := "https://www.chilis.com/order/payment"
+	session := http.Cookie{Name: "SESSION", Value: sid}
+	clt, err := createClient(&session)
+	if err != nil {
+		return loc, fmt.Errorf("creating order client: %v", err)
+	}
+	doc, err := parsePage(clt, u)
+	if err != nil {
+		return loc, fmt.Errorf("fetching payment information: %v", err)
+	}
+	form, err := pm.form(doc)
+	if err != nil {
+		return loc, fmt.Errorf("bulding order request: %v", err)
+	}
+	resp, err := clt.PostForm(u, form)
+	if err != nil {
+		return loc, fmt.Errorf("posting order request: %v", err)
+	}
+	defer resp.Body.Close()
+	doc, err = html.Parse(resp.Body)
+	if err != nil {
+		return loc, fmt.Errorf("parsing order response: %v", err)
+	}
+	loc, err = parseLocation(doc)
+	if err != nil {
+		return loc, fmt.Errorf("parsing order response: %v", err)
+	}
+	return loc, err
 }
 
 // form validates the payment method and adds all of its fields to a form map
