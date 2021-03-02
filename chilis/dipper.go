@@ -7,9 +7,9 @@ type Dipper struct {
 	Extras []Extra
 }
 
-// Permitted returns true if all of the Dipper's Extras are permitted for the
+// permitted returns true if all of the Dipper's Extras are permitted for the
 // Dipper's item.
-func (d Dipper) Permitted() bool {
+func (d Dipper) permitted() bool {
 	for _, e := range d.Extras {
 		if !d.Item.Permitted(e) {
 			return false

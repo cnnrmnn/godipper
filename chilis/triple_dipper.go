@@ -56,7 +56,7 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 	form.Add("_csrf", csrf)
 
 	for i, d := range td.Dippers {
-		if !d.Permitted() {
+		if !d.permitted() {
 			return nil, BadRequestError{fmt.Sprintf("dipper %d", i+1)}
 		}
 
