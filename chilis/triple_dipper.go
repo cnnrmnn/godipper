@@ -57,7 +57,7 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 
 	for i, d := range td.Dippers {
 		if !d.Permitted() {
-			return nil, fmt.Errorf("dipper %d is not permitted", i)
+			return nil, BadRequestError{fmt.Sprintf("dipper %d", i+1)}
 		}
 
 		iid, err := d.Item.ParseID(doc, i)

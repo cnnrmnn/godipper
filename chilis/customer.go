@@ -156,12 +156,12 @@ func (c Customer) validPhone() error {
 	n := 0
 	for _, digit := range c.Phone {
 		if digit < '0' || digit > '9' {
-			return BadRequestError{"phone", c.Phone}
+			return BadRequestError{"phone"}
 		}
 		n++
 	}
 	if n != 10 {
-		return BadRequestError{"phone", c.Phone}
+		return BadRequestError{"phone"}
 	}
 	return nil
 }
@@ -173,7 +173,7 @@ func (c Customer) validEmail() error {
 			return nil
 		}
 	}
-	return BadRequestError{"email", c.Email}
+	return BadRequestError{"email"}
 }
 
 // parseTotal returns a map with the order's subtotal and estimated tax

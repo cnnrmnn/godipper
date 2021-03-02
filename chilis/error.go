@@ -3,7 +3,6 @@ package chilis
 // BadRequestError is analagous to an HTTP 400 response.
 type BadRequestError struct {
 	Field string
-	Value string
 }
 
 func (bre BadRequestError) Error() string {

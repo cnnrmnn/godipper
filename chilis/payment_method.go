@@ -91,8 +91,14 @@ func (pm *PaymentMethod) validate() error {
 		Year:   pm.Year,
 	}
 
-	if err := card.Validate(true); err != nil {
-		return err
+	if ok := card.ValidateNumber(); !ok {
+		return BadRequestError{"credit card number"}
+	}
+	if err := card.ValidateExpiration; err != nil {
+		return BadRequestError{"expiration date"}
+	}
+	if err := card.ValidateCVV; err != nil {
+		return BadRequestError{"cvv"}
 	}
 
 	if err := card.Method(); err != nil {
@@ -105,7 +111,7 @@ func (pm *PaymentMethod) validate() error {
 	case "amex":
 		pm.Company = "americanexpress"
 	default:
-		return errors.New("invalid card company")
+		return BadRequestError{"credit card company"}
 	}
 	return nil
 }
