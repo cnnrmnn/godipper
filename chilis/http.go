@@ -19,7 +19,7 @@ func createJar() (*cookiejar.Jar, error) {
 	options := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(options)
 	if err != nil {
-		return nil, fmt.Errorf("creating cookie jar: %v")
+		return nil, fmt.Errorf("creating cookie jar: %v", err)
 	}
 	return jar, nil
 }
@@ -28,7 +28,7 @@ func createJar() (*cookiejar.Jar, error) {
 func createSessionJar(session *http.Cookie) (*cookiejar.Jar, error) {
 	jar, err := createJar()
 	if err != nil {
-		return nil, fmt.Errorf("creating session cookie jar: %v")
+		return nil, fmt.Errorf("creating session cookie jar: %v", err)
 	}
 	jar.SetCookies(chilisUrl, []*http.Cookie{session})
 	return jar, nil

@@ -113,7 +113,7 @@ func parseLocation(doc *html.Node) (Location, error) {
 	var loc Location
 	wrp, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
-		return loc, fmt.Errorf("parsing location: %v")
+		return loc, fmt.Errorf("parsing location: %v", err)
 	}
 	// Don't use functions that return errors for nil results after wrapper is
 	// located.

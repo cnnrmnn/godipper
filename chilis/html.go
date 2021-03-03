@@ -63,12 +63,12 @@ func innerText(node *html.Node, query string) (string, error) {
 func parsePage(clt *http.Client, u string) (*html.Node, error) {
 	resp, err := clt.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("fetching HTML at %s: %v", err)
+		return nil, fmt.Errorf("fetching HTML at %s: %v", u, err)
 	}
 	defer resp.Body.Close()
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("parsing HTML at %s: %v", err)
+		return nil, fmt.Errorf("parsing HTML at %s: %v", u, err)
 	}
 	return doc, nil
 }
