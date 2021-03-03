@@ -44,7 +44,7 @@ func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
 		return nil, fmt.Errorf("building checkout request: %v", err)
 	}
 
-	t, err := c.deliveryTime(clt, form.Get("_csrf"))
+	t, err := c.deliveryEstimate(clt, form.Get("_csrf"))
 	if err != nil {
 		return nil, fmt.Errorf("getting delivery time: %w", err)
 	}
@@ -104,9 +104,9 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	return form, nil
 }
 
-// deliveryTime returns an estimated delivery time or an error if the customer's
+// deliveryEstimate returns an estimated delivery time or an error if the customer's
 // address is out of range.
-func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error) {
+func (c Customer) deliveryEstimate(clt *http.Client, csrf string) (time.Time, error) {
 	var t time.Time
 	u := "https://www.chilis.com/order/delivery/estimate"
 	form := url.Values{}
@@ -123,20 +123,7 @@ func (c Customer) deliveryTime(clt *http.Client, csrf string) (time.Time, error)
 		return t, fmt.Errorf("reading delivery estimate response: %v", err)
 	}
 
-	var decoded interface{}
-	err = json.Unmarshal(body, &decoded)
-	if err != nil {
-		return t, fmt.Errorf("parsing delivery estimate response: %v", err)
-	}
-	tint, ok := decoded.(map[string]interface{})["delivery_time"]
-	if !ok {
-		return t, ForbiddenError{"address is out of range"}
-	}
-	t, err = time.Parse(time.RFC3339, tint.(string))
-	if err != nil {
-		return t, fmt.Errorf("parsing delivery time estimate: %v", err)
-	}
-	return t, nil
+	return parseEstimate(body)
 }
 
 // valid returns an error if any of the customer's fields are invalid.
@@ -228,4 +215,22 @@ func parseTransactionID(doc *html.Node) (string, error) {
 	}
 	tid = htmlquery.SelectAttr(input, "value")
 	return tid, nil
+}
+
+func parseEstimate(body []byte) (time.Time, error) {
+	var t time.Time
+	var decoded interface{}
+	err := json.Unmarshal(body, &decoded)
+	if err != nil {
+		return t, fmt.Errorf("parsing delivery estimate body: %v", err)
+	}
+	tint, ok := decoded.(map[string]interface{})["delivery_time"]
+	if !ok {
+		return t, ForbiddenError{"address is out of range"}
+	}
+	t, err = time.Parse(time.RFC3339, tint.(string))
+	if err != nil {
+		return t, fmt.Errorf("parsing delivery time estimate: %v", err)
+	}
+	return t, nil
 }
