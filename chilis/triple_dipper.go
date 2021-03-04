@@ -38,11 +38,7 @@ func (td TripleDipper) Cart(clt *http.Client) error {
 	if err != nil {
 		return fmt.Errorf("reading cart response body: %v", err)
 	}
-	// Request was successful if response body is a valid JSON encoding
-	if !json.Valid(body) {
-		return errors.New("unable to add TripleDipper to cart")
-	}
-	return nil
+	return parseCart(body)
 }
 
 // form checks if the TripleDipper is permitted and adds all of its components'
@@ -75,4 +71,18 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 		}
 	}
 	return form, nil
+}
+
+func parseCart(body []byte) error {
+	var decoded interface{}
+	err := json.Unmarshal(body, &decoded)
+	if err != nil {
+		return errors.New("parsing cart response body")
+	}
+	_, ok := decoded.(map[string]interface{})["error"]
+	if ok {
+		return errors.New("can't add invalid item to cart")
+	}
+	return nil
+
 }
