@@ -1,6 +1,7 @@
 package chilis
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -58,18 +59,12 @@ func nearestLocationID(clt *http.Client, addr Address) (string, error) {
 		return id, fmt.Errorf("fetching location: %v", err)
 	}
 	defer resp.Body.Close()
-	//	yeh, _ := io.ReadAll(resp.Body)
-	//	fmt.Println(string(yeh))
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return id, fmt.Errorf("parsing locations html: %v", err)
 	}
-	id, ok := parseNearestID(doc)
-	if !ok {
-		return id, ForbiddenError{"no locations in proximity"}
-	}
-	return id, err
+	return parseNearestID(doc)
 }
 
 // startSession starts a Chili's session and returns an HTTP client for future
@@ -90,22 +85,22 @@ func startSession() (*http.Client, error) {
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
-func parseNearestID(doc *html.Node) (string, bool) {
+func parseNearestID(doc *html.Node) (string, error) {
 	var id string
 	nearest, err := findOne(doc, classQuery("div", "location"))
 	if err != nil {
-		return id, false
+		return id, ForbiddenError{"no locations in proximity"}
 	}
 	_, err = findOne(nearest, classQuery("span", "delivery icon-doordash"))
 	if err != nil {
-		return id, false
+		return id, ForbiddenError{"location doesn't deliver"}
 	}
 
 	id = htmlquery.SelectAttr(nearest, "id")[9:]
 	if id == "" {
-		return id, false
+		return id, errors.New("parsing nearest location ID")
 	}
-	return id, true
+	return id, nil
 }
 
 // parseLocation parses and returns a Location from an order confirmation page.
