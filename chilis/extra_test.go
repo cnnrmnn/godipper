@@ -41,6 +41,8 @@ var extraTests = []struct {
 	},
 }
 
+// Test each extra attached to an applicable item as the nth selection in
+// dipper<n>.html
 func TestParseIDExtra(t *testing.T) {
 	for n, doc := range dipperDocs {
 		for _, test := range extraTests {
