@@ -10,12 +10,12 @@ import (
 	"golang.org/x/net/html"
 )
 
-var paths = []string{
+var checkoutPaths = []string{
 	"testdata/checkout1.html",
 	"testdata/checkout2.html",
 	"testdata/checkout3.html",
 }
-var docs []*html.Node
+var checkoutDocs []*html.Node
 
 var totalTests = []struct {
 	subtotal string
@@ -52,19 +52,19 @@ var estimateTests = []struct {
 
 func init() {
 	// Only read/parse test HTML files once
-	for _, path := range paths {
+	for _, path := range checkoutPaths {
 		doc, err := htmlquery.LoadDoc(path)
 		if err != nil {
 			fmt.Errorf("%s: %v", path, err)
 		}
-		docs = append(docs, doc)
+		checkoutDocs = append(checkoutDocs, doc)
 	}
 }
 
 func TestParseTotal(t *testing.T) {
 	for n, test := range totalTests {
-		path := paths[n]
-		subtotal, tax, err := parseTotal(docs[n])
+		path := checkoutPaths[n]
+		subtotal, tax, err := parseTotal(checkoutDocs[n])
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 		}
@@ -79,8 +79,8 @@ func TestParseTotal(t *testing.T) {
 
 func TestParseASAP(t *testing.T) {
 	for n, test := range asapTests {
-		path := paths[n]
-		date, time, err := parseASAP(docs[n])
+		path := checkoutPaths[n]
+		date, time, err := parseASAP(checkoutDocs[n])
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 		}
@@ -95,8 +95,8 @@ func TestParseASAP(t *testing.T) {
 
 func TestParseTransactionID(t *testing.T) {
 	for n, test := range tidTests {
-		path := paths[n]
-		tid, err := parseTransactionID(docs[n])
+		path := checkoutPaths[n]
+		tid, err := parseTransactionID(checkoutDocs[n])
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 		}
