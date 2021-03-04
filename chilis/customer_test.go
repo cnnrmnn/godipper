@@ -139,7 +139,7 @@ func TestParseEstimateRange(t *testing.T) {
 	if !errors.As(err, &e) {
 		t.Errorf("%s: got err = %v, want (ForbiddenError) %s", path, err, reason)
 	}
-	if e.Reason != reason {
+	if reason != e.Reason {
 		t.Errorf("%s: err = %v, want %s", path, err, reason)
 	}
 }
