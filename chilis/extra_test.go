@@ -1,20 +1,8 @@
 package chilis
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/antchfx/htmlquery"
-	"golang.org/x/net/html"
 )
-
-var extraPaths = []string{
-	"testdata/dipper1.html",
-	"testdata/dipper2.html",
-	"testdata/dipper3.html",
-}
-
-var extraDocs []*html.Node
 
 var tests = []struct {
 	extra Extra
@@ -53,21 +41,10 @@ var tests = []struct {
 	},
 }
 
-func init() {
-	// Only read/parse test HTML files once
-	for _, path := range extraPaths {
-		doc, err := htmlquery.LoadDoc(path)
-		if err != nil {
-			fmt.Errorf("%s: %v", path, err)
-		}
-		extraDocs = append(extraDocs, doc)
-	}
-}
-
 func TestParseID(t *testing.T) {
-	for n, doc := range extraDocs {
+	for n, doc := range dipperDocs {
 		for _, test := range tests {
-			path := extraPaths[n]
+			path := dipperPaths[n]
 			extra := test.extra
 			id, err := extra.parseID(doc, test.iids[n])
 			if err != nil {
