@@ -40,7 +40,7 @@ func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
 
 	form, err := c.form(doc)
 	if err != nil {
-		return nil, fmt.Errorf("building checkout request: %v", err)
+		return nil, fmt.Errorf("building checkout request: %w", err)
 	}
 
 	time, err := c.deliveryEstimate(clt, form.Get("_csrf"))
@@ -83,7 +83,7 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("deliveryAddlNotes", c.Notes)
 	date, time, err := parseASAP(doc)
 	if err != nil {
-		return nil, fmt.Errorf("creating checkout form: %v", err)
+		return nil, fmt.Errorf("creating checkout form: %w", err)
 	}
 	// Chili's inexplicably requires all of these fields.
 	form.Add("deliveryDate", date)
@@ -191,7 +191,7 @@ func parseASAP(doc *html.Node) (string, string, error) {
 	dq := "/div/select[@id='delivery-date']/option"
 	dopt, err := findOne(con, dq)
 	if err != nil {
-		return date, time, fmt.Errorf("parsing ASAP delivery date: %v", err)
+		return date, time, ForbiddenError{"location is not currently delivering"}
 	}
 	date = htmlquery.SelectAttr(dopt, "value")
 	// Slightly complicated XPath query
