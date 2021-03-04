@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var tests = []struct {
+var extraTests = []struct {
 	extra Extra
 	iids  []string
 	ids   []string
@@ -41,9 +41,9 @@ var tests = []struct {
 	},
 }
 
-func TestParseID(t *testing.T) {
+func TestParseIDExtra(t *testing.T) {
 	for n, doc := range dipperDocs {
-		for _, test := range tests {
+		for _, test := range extraTests {
 			path := dipperPaths[n]
 			extra := test.extra
 			id, err := extra.parseID(doc, test.iids[n])
