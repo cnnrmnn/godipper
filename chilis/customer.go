@@ -42,19 +42,14 @@ func (c Customer) Checkout(clt *http.Client) (OrderInfo, error) {
 		return info, fmt.Errorf("fetching delivery information: %v", err)
 	}
 
-	info, err = parseInfo(doc)
-	if err != nil {
-		return info, fmt.Errorf("parsing order total: %v", err)
-	}
-
 	form, err := c.form(doc)
 	if err != nil {
 		return info, fmt.Errorf("building checkout request: %w", err)
 	}
 
-	info.DeliveryTime, err = c.deliveryEstimate(clt, form.Get("_csrf"))
+	info, err = c.orderInfo(clt, doc, form.Get("_csrf"))
 	if err != nil {
-		return info, fmt.Errorf("getting delivery time: %w", err)
+		return info, fmt.Errorf("parsing order total: %v", err)
 	}
 
 	_, err = clt.PostForm(u, form)
@@ -106,6 +101,21 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	}
 	form.Add("_csrf", csrf)
 	return form, nil
+}
+
+// deliveryInfo returns the customer's orders information given the root node
+// of the checkout page and the previously parsed csrf token.
+func (c Customer) orderInfo(clt *http.Client, doc *html.Node, csrf string) (OrderInfo, error) {
+	info, err := parseInfo(doc)
+	if err != nil {
+		return info, fmt.Errorf("parsing order total: %v", err)
+	}
+
+	info.DeliveryTime, err = c.deliveryEstimate(clt, csrf)
+	if err != nil {
+		return info, fmt.Errorf("getting delivery time: %w", err)
+	}
+	return info, nil
 }
 
 // deliveryEstimate returns an estimated delivery time or an error if the customer's
