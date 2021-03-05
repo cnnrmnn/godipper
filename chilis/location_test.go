@@ -96,3 +96,29 @@ func TestParseNearestIDNoOrders(t *testing.T) {
 		t.Errorf("%s: err = %v, want (ForbiddenError) %s", path, err, reason)
 	}
 }
+
+func TestParseLocation(t *testing.T) {
+	// No need to do more than one
+	path := "testdata/confirmation.html"
+	test := Location{
+		Name:  "Durham 15/501",
+		Phone: "(919) 489-6699",
+		Address: Address{
+			Street: "4600 Chapel Hill Blvd.",
+			City:   "Durham",
+			State:  "NC",
+			Zip:    "27707",
+		},
+	}
+	doc, err := htmlquery.LoadDoc(path)
+	if err != nil {
+		t.Errorf("%s: %v", path, err)
+	}
+	location, err := parseLocation(doc)
+	if err != nil {
+		t.Errorf("%s: %v", path, err)
+	}
+	if location != test {
+		t.Errorf("%s: location = %s, want %s", path, location, test)
+	}
+}
