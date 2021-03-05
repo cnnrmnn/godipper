@@ -10,9 +10,9 @@ import (
 
 // A Location is a Chili's restuarant location
 type Location struct {
-	Name    string  `json:"name"`
-	Phone   string  `json:"phone"`
-	Address Address `json:"address"`
+	Name    string `json:"name"`
+	Phone   string `json:"phone"`
+	Address `json:"address"`
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
