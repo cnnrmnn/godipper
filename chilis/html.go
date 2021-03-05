@@ -27,8 +27,8 @@ func textQuery(name, text string) string {
 	return fmt.Sprintf("//%s[text()='%s']", name, text)
 }
 
-// find finds and returns a slice of HTML elements with the given name and
-// class attribute.
+// find finds and returns a slice of HTML elements that match the given XPath
+// query.
 func find(node *html.Node, query string) ([]*html.Node, error) {
 	elements := htmlquery.Find(node, query)
 	if elements == nil {
@@ -54,8 +54,18 @@ func innerText(node *html.Node, query string) (string, error) {
 	if err != nil {
 		return it, fmt.Errorf("parsing inner text: %v", err)
 	}
-	it = htmlquery.InnerText(element)
-	return it, nil
+	return htmlquery.InnerText(element), nil
+}
+
+// selectAttr finds the first HTML element that matches the given XPath query
+// and returns the value of the given attribute.
+func selectAttr(node *html.Node, query, attr string) (string, error) {
+	var val string
+	elt, err := findOne(node, query)
+	if err != nil {
+		return val, fmt.Errorf("selecting attribute %s: %v", attr, err)
+	}
+	return htmlquery.SelectAttr(elt, attr), nil
 }
 
 // parsePage parses and returns the root node of an HTML document at the given
