@@ -74,7 +74,7 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("payment", "online")
 	form.Add("silverwareOptIn", "true")
 	form.Add("smsOptIn", "true")
-	form.Add("deliveryAddress", c.Address.String())
+	form.Add("deliveryAddress", c.Address.chilis())
 	form.Add("deliveryAddress2", c.Address.Unit)
 	form.Add("firstName", c.FirstName)
 	form.Add("lastName", c.LastName)

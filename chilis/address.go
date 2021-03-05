@@ -19,5 +19,5 @@ func (a Address) String() string {
 // chilis retrns a string representation of an Address that is formatted for
 // Chili's delivery estimate endpoint.
 func (a Address) chilis() string {
-	return fmt.Sprintf("%s,%s,%s,%s", a.Street, a.City, a.State, a.Zip)
+	return fmt.Sprintf("%s,%s,%s,USA", a.Street, a.City, a.State)
 }
