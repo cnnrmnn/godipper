@@ -66,7 +66,7 @@ func TestParseNearestIDNoDelivery(t *testing.T) {
 		reason := "location doesn't deliver"
 		doc, err := htmlquery.LoadDoc(test)
 		if err != nil {
-			t.Errorf("%s, %v", test, err)
+			t.Errorf("%s: %v", test, err)
 		}
 		_, err = parseNearestID(doc)
 		if err == nil {
@@ -76,5 +76,23 @@ func TestParseNearestIDNoDelivery(t *testing.T) {
 		if !errors.As(err, &e) || reason != e.Reason {
 			t.Errorf("%s: err = %s, want (ForbiddenError) %s", test, err, reason)
 		}
+	}
+}
+
+func TestParseNearestIDNoOrders(t *testing.T) {
+	// No need to do more than one
+	path := "testdata/location_no_orders.html"
+	reason := "location is not accepting online orders"
+	doc, err := htmlquery.LoadDoc(path)
+	if err != nil {
+		t.Errorf("%s: %v", path, err)
+	}
+	_, err = parseNearestID(doc)
+	if err == nil {
+		t.Errorf("%s: err = nil, want (ForbiddenError) %s", path, reason)
+	}
+	var e ForbiddenError
+	if !errors.As(err, &e) || reason != e.Reason {
+		t.Errorf("%s: err = %v, want (ForbiddenError) %s", path, err, reason)
 	}
 }
