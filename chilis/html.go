@@ -30,31 +30,31 @@ func textQuery(name, text string) string {
 // find finds and returns a slice of HTML elements that match the given XPath
 // query.
 func find(node *html.Node, query string) ([]*html.Node, error) {
-	elements := htmlquery.Find(node, query)
-	if elements == nil {
+	elts := htmlquery.Find(node, query)
+	if elts == nil {
 		return nil, errors.New("no matching elements found")
 	}
-	return elements, nil
+	return elts, nil
 }
 
 // findOne is the same as find, but it only finds the first HTML element.
 func findOne(node *html.Node, query string) (*html.Node, error) {
-	element := htmlquery.FindOne(node, query)
-	if element == nil {
+	elt := htmlquery.FindOne(node, query)
+	if elt == nil {
 		return nil, errors.New("no matching elements found")
 	}
-	return element, nil
+	return elt, nil
 }
 
 // innerText finds the first HTML element with the given name and class
 // attribute and returns its inner text.
 func innerText(node *html.Node, query string) (string, error) {
 	var it string
-	element, err := findOne(node, query)
+	elt, err := findOne(node, query)
 	if err != nil {
 		return it, fmt.Errorf("parsing inner text: %v", err)
 	}
-	return htmlquery.InnerText(element), nil
+	return htmlquery.InnerText(elt), nil
 }
 
 // selectAttr finds the first HTML element that matches the given XPath query
