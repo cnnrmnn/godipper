@@ -213,19 +213,17 @@ func parseASAP(doc *html.Node) (string, string, error) {
 		return date, time, fmt.Errorf("parsing ASAP delivery: %v", err)
 	}
 	// XPath query
-	dq := "/div/select[@id='delivery-date']/option"
-	dopt, err := findOne(con, dq)
+	q = "/div/select[@id='delivery-date']/option"
+	date, err = selectAttr(con, q, "value")
 	if err != nil {
 		return date, time, ForbiddenError{"location is not currently delivering"}
 	}
-	date = htmlquery.SelectAttr(dopt, "value")
 	// XPath query
-	tq := "/div/select[@id='delivery-time']/option"
-	topt, err := findOne(con, tq)
+	q = "/div/select[@id='delivery-time']/option"
+	time, err = selectAttr(con, q, "value")
 	if err != nil {
 		return date, time, fmt.Errorf("parsing ASAP delivery time: %v", err)
 	}
-	time = htmlquery.SelectAttr(topt, "value")
 	return date, time, nil
 }
 

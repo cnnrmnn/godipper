@@ -3,7 +3,6 @@ package chilis
 import (
 	"fmt"
 
-	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
 )
 
@@ -75,10 +74,9 @@ func (it Item) parseID(node *html.Node, i int) (string, error) {
 	if err != nil {
 		return id, fmt.Errorf("parsing Item's Chili's ID: %v", err)
 	}
-	opt, err := findOne(label.Parent, textQuery("option", it.Name()))
+	id, err = selectAttr(label.Parent, textQuery("option", it.Name()), "value")
 	if err != nil {
 		return id, fmt.Errorf("parsing Item's Chili's ID: %v", err)
 	}
-	id = htmlquery.SelectAttr(opt, "value")
 	return id, nil
 }

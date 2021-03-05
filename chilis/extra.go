@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
 )
 
@@ -36,11 +35,11 @@ func (e Extra) parseID(node *html.Node, iid string) (string, error) {
 		return eid, fmt.Errorf("parsing Extra's Chili's ID: %v", err)
 	}
 	for _, grp := range grps {
-		opt, err := findOne(grp, textQuery("option", e.Name()))
-		if err == nil {
-			eid = htmlquery.SelectAttr(opt, "value")
-			return eid, nil
+		eid, err := selectAttr(grp, textQuery("option", e.Name()), "value")
+		if err != nil {
+			continue
 		}
+		return eid, nil
 	}
 	return eid, errors.New("parsing Extra's Chili's ID")
 }
