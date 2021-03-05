@@ -52,7 +52,6 @@ func nearestLocationID(clt *http.Client, addr Address) (string, error) {
 		"query": []string{addr.String()},
 	}
 	u.RawQuery = query.Encode()
-	fmt.Println(u.String())
 
 	resp, err := clt.Get(u.String())
 	if err != nil {
