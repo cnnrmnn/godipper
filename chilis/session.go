@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-// A Session is composed of the session ID and an HTTP client with the session
-// cookie set.
+// A Session is composed of a Chili's session ID and an HTTP client with the
+// session cookie set.
 type Session struct {
 	ID     string
 	Client *http.Client
