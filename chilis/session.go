@@ -3,6 +3,7 @@ package chilis
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -53,7 +54,7 @@ func StartSession() (*Session, error) {
 	return &Session{id, clt}, err
 }
 
-// SetLocation sets the Chili's location for session.
+// SetLocation sets the Chili's location for the Session.
 func (s *Session) SetLocation(addr Address) error {
 	clt := s.Client
 	id, err := nearestLocationID(clt, addr)
@@ -96,4 +97,31 @@ func nearestLocationID(clt *http.Client, addr Address) (string, error) {
 		return id, fmt.Errorf("parsing locations html: %v", err)
 	}
 	return parseNearestID(doc)
+}
+
+// Cart adds the given TripleDipper to the Session's cart.
+func (s *Session) Cart(td TripleDipper) error {
+	clt := s.Client
+	u := "https://www.chilis.com/menu/appetizers/triple-dipper"
+	doc, err := parsePage(clt, u)
+	if err != nil {
+		return fmt.Errorf("adding TripleDipper to cart: %v", err)
+	}
+
+	form, err := td.form(doc)
+	if err != nil {
+		return fmt.Errorf("adding TripleDipper to cart: %w", err)
+	}
+
+	resp, err := clt.PostForm(u, form)
+	if err != nil {
+		return fmt.Errorf("posting cart request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading cart response body: %v", err)
+	}
+	return parseCart(body)
 }

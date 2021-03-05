@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 
 	"golang.org/x/net/html"
@@ -13,32 +11,6 @@ import (
 
 type TripleDipper struct {
 	Dippers [3]Dipper
-}
-
-// Cart adds the TripleDipper to the cart given a session cookie.
-func (td TripleDipper) Cart(clt *http.Client) error {
-	u := "https://www.chilis.com/menu/appetizers/triple-dipper"
-	doc, err := parsePage(clt, u)
-	if err != nil {
-		return fmt.Errorf("adding TripleDipper to cart: %v", err)
-	}
-
-	form, err := td.form(doc)
-	if err != nil {
-		return fmt.Errorf("adding TripleDipper to cart: %w", err)
-	}
-
-	resp, err := clt.PostForm(u, form)
-	if err != nil {
-		return fmt.Errorf("posting cart request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading cart response body: %v", err)
-	}
-	return parseCart(body)
 }
 
 // form checks if the TripleDipper is permitted and adds all of its components'
