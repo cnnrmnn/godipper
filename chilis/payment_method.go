@@ -94,10 +94,10 @@ func (pm *PaymentMethod) validate() error {
 	if ok := card.ValidateNumber(); !ok {
 		return BadRequestError{"credit card number"}
 	}
-	if err := card.ValidateExpiration; err != nil {
+	if err := card.ValidateExpiration(); err != nil {
 		return BadRequestError{"expiration date"}
 	}
-	if err := card.ValidateCVV; err != nil {
+	if err := card.ValidateCVV(); err != nil {
 		return BadRequestError{"cvv"}
 	}
 
