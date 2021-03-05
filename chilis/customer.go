@@ -20,44 +20,49 @@ type Customer struct {
 	Notes     string  `json:"notes"`
 }
 
+type OrderInfo struct {
+	Subtotal      string `json:"subtotal"`
+	Tax           string `json:"tax"`
+	DeliveryFee   string `json:"deliveryFee"`
+	ServiceCharge string `json:"serviceCharge"`
+	DeliveryTime  string `json:"deliveryTime"`
+}
+
 // Checkout submits the customer's information and returns a map with the order
 // subtotal, tax, and estimated delivery time.
-func (c Customer) Checkout(clt *http.Client) (map[string]string, error) {
+func (c Customer) Checkout(clt *http.Client) (OrderInfo, error) {
+	var info OrderInfo
 	if err := c.valid(); err != nil {
-		return nil, err
+		return info, err
 	}
 
 	u := "https://www.chilis.com/order/pickup"
 	doc, err := parsePage(clt, u)
 	if err != nil {
-		return nil, fmt.Errorf("fetching delivery information: %v", err)
+		return info, fmt.Errorf("fetching delivery information: %v", err)
 	}
 
-	subtotal, tax, err := parseTotal(doc)
+	info, err = parseInfo(doc)
 	if err != nil {
-		return nil, fmt.Errorf("parsing order total: %v", err)
+		return info, fmt.Errorf("parsing order total: %v", err)
 	}
 
 	form, err := c.form(doc)
 	if err != nil {
-		return nil, fmt.Errorf("building checkout request: %w", err)
+		return info, fmt.Errorf("building checkout request: %w", err)
 	}
 
-	time, err := c.deliveryEstimate(clt, form.Get("_csrf"))
+	info.DeliveryTime, err = c.deliveryEstimate(clt, form.Get("_csrf"))
 	if err != nil {
-		return nil, fmt.Errorf("getting delivery time: %w", err)
+		return info, fmt.Errorf("getting delivery time: %w", err)
 	}
 
 	_, err = clt.PostForm(u, form)
 	if err != nil {
-		return nil, fmt.Errorf("posting checkout request: %v", err)
+		return info, fmt.Errorf("posting checkout request: %v", err)
 	}
 
-	return map[string]string{
-		"subtotal":     subtotal,
-		"tax":          tax,
-		"deliveryTime": time,
-	}, nil
+	return info, nil
 }
 
 // form adds all of the customer's information to a form map with the default
@@ -162,20 +167,30 @@ func (c Customer) validEmail() error {
 	return BadRequestError{"email"}
 }
 
-// parseTotal returns a map with the order's subtotal and estimated tax
-func parseTotal(doc *html.Node) (string, string, error) {
-	var subtotal, tax string
-	subtotal, err := innerText(doc, classQuery("div", "cost js-subtotal"))
+func parseInfo(doc *html.Node) (info OrderInfo, err error) {
+	info.Subtotal, err = innerText(doc, classQuery("div", "cost js-subtotal"))
 	if err != nil {
-		return subtotal, tax, fmt.Errorf("parsing subtotal: %v", err)
+		return info, fmt.Errorf("parsing subtotal: %v", err)
 	}
-	// Slightly complex query in raw XPath
-	q := "//tr[@id='pickup-tax-payment']/td[2]/div"
-	tax, err = innerText(doc, q)
+	// XPath query
+	q := "//tr[@id='pickup-tax-payment']/td[2]/div[@class='cost']"
+	info.Tax, err = innerText(doc, q)
 	if err != nil {
-		return subtotal, tax, fmt.Errorf("parsing tax: %v", err)
+		return info, fmt.Errorf("parsing tax: %v", err)
 	}
-	return subtotal, tax, nil
+	// XPath query
+	q = "//tr[@id='delivery-fee']/td[2]/div[@class='cost']"
+	info.DeliveryFee, err = innerText(doc, q)
+	if err != nil {
+		return info, fmt.Errorf("parsing delivery fee: %v", err)
+	}
+	// XPath query
+	q = "//tr[@id='service-charge']/td[2]/div[@class='cost']"
+	info.ServiceCharge, err = innerText(doc, q)
+	if err != nil {
+		return info, fmt.Errorf("parsing service charge: %v", err)
+	}
+	return info, nil
 }
 
 // parseASAP parses and returns the ASAP values for the date and time fields
@@ -187,14 +202,14 @@ func parseASAP(doc *html.Node) (string, string, error) {
 	if err != nil {
 		return date, time, fmt.Errorf("parsing ASAP delivery: %v", err)
 	}
-	// Slightly complicated XPath query
+	// XPath query
 	dq := "/div/select[@id='delivery-date']/option"
 	dopt, err := findOne(con, dq)
 	if err != nil {
 		return date, time, ForbiddenError{"location is not currently delivering"}
 	}
 	date = htmlquery.SelectAttr(dopt, "value")
-	// Slightly complicated XPath query
+	// XPath query
 	tq := "/div/select[@id='delivery-time']/option"
 	topt, err := findOne(con, tq)
 	if err != nil {

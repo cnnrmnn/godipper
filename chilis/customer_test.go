@@ -17,13 +17,10 @@ var checkoutPaths = []string{
 }
 var checkoutDocs []*html.Node
 
-var totalTests = []struct {
-	subtotal string
-	tax      string
-}{
-	{"$13.19", "$0.93"},
-	{"$40.47", "$2.43"},
-	{"$83.64", "$6.90"},
+var infoTests = []OrderInfo{
+	{"$13.19", "$0.93", "$3.99", "$3.25", ""},
+	{"$40.47", "$2.43", "$3.99", "$3.25", ""},
+	{"$83.64", "$6.90", "$3.99", "$3.25", ""},
 }
 
 var asapTests = []struct {
@@ -61,18 +58,15 @@ func init() {
 	}
 }
 
-func TestParseTotal(t *testing.T) {
-	for n, test := range totalTests {
+func TestParseInfo(t *testing.T) {
+	for n, test := range infoTests {
 		path := checkoutPaths[n]
-		subtotal, tax, err := parseTotal(checkoutDocs[n])
+		info, err := parseInfo(checkoutDocs[n])
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 		}
-		if subtotal != test.subtotal {
-			t.Errorf("%s: subtotal = %s, want %s", path, subtotal, test.subtotal)
-		}
-		if tax != test.tax {
-			t.Errorf("%s: tax = %s, want %s", path, tax, test.tax)
+		if info != test {
+			t.Errorf("%s: info = %+v, want %+v", path, info, test)
 		}
 	}
 }
