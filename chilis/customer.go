@@ -3,8 +3,6 @@ package chilis
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 
 	"github.com/antchfx/htmlquery"
@@ -26,38 +24,6 @@ type OrderInfo struct {
 	DeliveryFee   string `json:"deliveryFee"`
 	ServiceCharge string `json:"serviceCharge"`
 	DeliveryTime  string `json:"deliveryTime"`
-}
-
-// Checkout submits the customer's information and returns a map with the order
-// subtotal, tax, and estimated delivery time.
-func (c Customer) Checkout(clt *http.Client) (OrderInfo, error) {
-	var info OrderInfo
-	if err := c.valid(); err != nil {
-		return info, err
-	}
-
-	u := "https://www.chilis.com/order/pickup"
-	doc, err := parsePage(clt, u)
-	if err != nil {
-		return info, fmt.Errorf("fetching delivery information: %v", err)
-	}
-
-	form, err := c.form(doc)
-	if err != nil {
-		return info, fmt.Errorf("building checkout request: %w", err)
-	}
-
-	info, err = c.orderInfo(clt, doc, form.Get("_csrf"))
-	if err != nil {
-		return info, fmt.Errorf("parsing order total: %v", err)
-	}
-
-	_, err = clt.PostForm(u, form)
-	if err != nil {
-		return info, fmt.Errorf("posting checkout request: %v", err)
-	}
-
-	return info, nil
 }
 
 // form adds all of the customer's information to a form map with the default
@@ -101,43 +67,6 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	}
 	form.Add("_csrf", csrf)
 	return form, nil
-}
-
-// deliveryInfo returns the customer's orders information given the root node
-// of the checkout page and the previously parsed csrf token.
-func (c Customer) orderInfo(clt *http.Client, doc *html.Node, csrf string) (OrderInfo, error) {
-	info, err := parseInfo(doc)
-	if err != nil {
-		return info, fmt.Errorf("parsing order total: %v", err)
-	}
-
-	info.DeliveryTime, err = c.deliveryEstimate(clt, csrf)
-	if err != nil {
-		return info, fmt.Errorf("getting delivery time: %w", err)
-	}
-	return info, nil
-}
-
-// deliveryEstimate returns an estimated delivery time or an error if the customer's
-// address is out of range.
-func (c Customer) deliveryEstimate(clt *http.Client, csrf string) (string, error) {
-	var time string
-	u := "https://www.chilis.com/order/delivery/estimate"
-	form := url.Values{}
-	form.Add("_csrf", csrf)
-	// Delivery estimate form requires this strange address format.
-	form.Add("deliveryAddress", c.Address.chilis())
-	resp, err := clt.PostForm(u, form)
-	if err != nil {
-		return time, fmt.Errorf("fetching delivery estimate: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return time, fmt.Errorf("reading delivery estimate response: %v", err)
-	}
-
-	return parseEstimate(body)
 }
 
 // valid returns an error if any of the customer's fields are invalid.
