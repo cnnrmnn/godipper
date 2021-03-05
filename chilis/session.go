@@ -185,3 +185,37 @@ func (s *Session) deliveryTime(c Customer, csrf string) (string, error) {
 
 	return parseEstimate(body)
 }
+
+// Order places the order using the given PaymentMethod and returns the
+// Location at which the order was placed.
+func (s *Session) Order(pm *PaymentMethod) (Location, error) {
+	var loc Location
+	clt := s.Client
+	u := "https://www.chilis.com/order/payment"
+
+	if err := pm.validate(); err != nil {
+		return loc, fmt.Errorf("creating order: %w", err)
+	}
+	doc, err := parsePage(clt, u)
+	if err != nil {
+		return loc, fmt.Errorf("fetching payment information: %v", err)
+	}
+	form, err := pm.form(doc)
+	if err != nil {
+		return loc, fmt.Errorf("bulding order request: %v", err)
+	}
+	resp, err := clt.PostForm(u, form)
+	if err != nil {
+		return loc, fmt.Errorf("posting order request: %v", err)
+	}
+	defer resp.Body.Close()
+	doc, err = html.Parse(resp.Body)
+	if err != nil {
+		return loc, fmt.Errorf("parsing order response: %v", err)
+	}
+	loc, err = parseLocation(doc)
+	if err != nil {
+		return loc, fmt.Errorf("parsing order response: %v", err)
+	}
+	return loc, err
+}
