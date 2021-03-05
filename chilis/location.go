@@ -17,13 +17,14 @@ type Location struct {
 	Address Address `json:"address"`
 }
 
-// SetLocation sets the Chili's location for a new session and returns an HTTP
-// client for future requests.
-func SetLocation(addr Address) (*http.Client, error) {
-	clt, err := startSession()
+// SetLocation sets the Chili's location for a new session and returns a
+// Session..
+func SetLocation(addr Address) (*Session, error) {
+	sess, err := StartSession()
 	if err != nil {
 		return nil, fmt.Errorf("setting location: %v", err)
 	}
+	clt := sess.Client
 	id, err := nearestLocationID(clt, addr)
 	if err != nil {
 		return nil, fmt.Errorf("setting location: %v", err)
@@ -36,7 +37,7 @@ func SetLocation(addr Address) (*http.Client, error) {
 	}
 	resp.Body.Close()
 
-	return clt, nil
+	return sess, nil
 }
 
 // nearestLocationID returns the ID of the nearest location that is in proximity
@@ -64,22 +65,6 @@ func nearestLocationID(clt *http.Client, addr Address) (string, error) {
 		return id, fmt.Errorf("parsing locations html: %v", err)
 	}
 	return parseNearestID(doc)
-}
-
-// startSession starts a Chili's session and returns an HTTP client for future
-// requests. Unfortunately, the first request (before the session cookie is
-// set) can't set the session's location.
-func startSession() (*http.Client, error) {
-	jar, err := createJar()
-	if err != nil {
-		return nil, fmt.Errorf("starting session: %v", err)
-	}
-	client := &http.Client{Jar: jar}
-	_, err = client.Get("https://www.chilis.com")
-	if err != nil {
-		return nil, fmt.Errorf("starting session: %v", err)
-	}
-	return client, nil
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
