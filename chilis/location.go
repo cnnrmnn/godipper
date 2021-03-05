@@ -91,7 +91,7 @@ func parseNearestID(doc *html.Node) (string, error) {
 	if err != nil {
 		return id, ForbiddenError{"no locations in proximity"}
 	}
-	// Slightly complex XPath query
+	// XPath query
 	q := "//a[@class='btn slim order-btn' and text()='Order Now']"
 	_, err = findOne(nearest, q)
 	if err != nil {
