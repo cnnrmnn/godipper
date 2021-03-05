@@ -76,21 +76,11 @@ func parsePage(clt *http.Client, u string) (*html.Node, error) {
 		return nil, fmt.Errorf("fetching HTML at %s: %v", u, err)
 	}
 	defer resp.Body.Close()
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("parsing HTML at %s: %v", u, err)
-	}
-	return doc, nil
+	return html.Parse(resp.Body)
 }
 
 // parseCSRFToken parses and returns the CSRF token given any Chili's form
 // page.
 func parseCSRFToken(node *html.Node) (string, error) {
-	var csrf string
-	input, err := findOne(node, attrQuery("input", "name", "_csrf"))
-	if err != nil {
-		return csrf, fmt.Errorf("parsing CSRF token: %v", err)
-	}
-	csrf = htmlquery.SelectAttr(input, "value")
-	return csrf, nil
+	return selectAttr(node, attrQuery("input", "name", "_csrf"), "value")
 }
