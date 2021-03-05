@@ -3,8 +3,6 @@ package chilis
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
 
 	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
@@ -15,56 +13,6 @@ type Location struct {
 	Name    string  `json:"name"`
 	Phone   string  `json:"phone"`
 	Address Address `json:"address"`
-}
-
-// SetLocation sets the Chili's location for a new session and returns a
-// Session..
-func SetLocation(addr Address) (*Session, error) {
-	sess, err := StartSession()
-	if err != nil {
-		return nil, fmt.Errorf("setting location: %v", err)
-	}
-	clt := sess.Client
-	id, err := nearestLocationID(clt, addr)
-	if err != nil {
-		return nil, fmt.Errorf("setting location: %v", err)
-	}
-	u := fmt.Sprintf("https://www.chilis.com/order?rid=%s", id)
-
-	resp, err := clt.Get(u)
-	if err != nil {
-		return nil, fmt.Errorf("setting location: %v", err)
-	}
-	resp.Body.Close()
-
-	return sess, nil
-}
-
-// nearestLocationID returns the ID of the nearest location that is in proximity
-// of the given address.
-func nearestLocationID(clt *http.Client, addr Address) (string, error) {
-	var id string
-
-	u, err := url.Parse("https://www.chilis.com/locations/results")
-	if err != nil {
-		return id, fmt.Errorf("parsing location URL: %v", err)
-	}
-	query := url.Values{
-		"query": []string{addr.String()},
-	}
-	u.RawQuery = query.Encode()
-
-	resp, err := clt.Get(u.String())
-	if err != nil {
-		return id, fmt.Errorf("fetching location: %v", err)
-	}
-	defer resp.Body.Close()
-
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return id, fmt.Errorf("parsing locations html: %v", err)
-	}
-	return parseNearestID(doc)
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
