@@ -9,6 +9,7 @@ type Address struct {
 	City   string `json:"city"`
 	State  string `json:"state"`
 	Zip    string `json:"zip"`
+	Notes  string `json:"notes"`
 }
 
 // String returns a string representation of an Address (doesn't include Unit).
