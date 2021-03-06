@@ -131,7 +131,7 @@ func (s *Session) Cart(td TripleDipper) error {
 func (s *Session) Checkout(c Customer) (OrderInfo, error) {
 	var info OrderInfo
 	clt := s.Client
-	if err := c.valid(); err != nil {
+	if err := validCustomer(c); err != nil {
 		return info, err
 	}
 
@@ -141,7 +141,7 @@ func (s *Session) Checkout(c Customer) (OrderInfo, error) {
 		return info, fmt.Errorf("fetching delivery information: %v", err)
 	}
 
-	form, err := c.form(doc)
+	form, err := checkoutForm(doc, c)
 	if err != nil {
 		return info, fmt.Errorf("building checkout request: %w", err)
 	}
@@ -172,7 +172,7 @@ func (s *Session) deliveryTime(c Customer, csrf string) (string, error) {
 	u := "https://www.chilis.com/order/delivery/estimate"
 	form := url.Values{}
 	form.Add("_csrf", csrf)
-	form.Add("deliveryAddress", c.Address.chilis())
+	form.Add("deliveryAddress", c.Address().chilis())
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
 		return time, fmt.Errorf("fetching delivery estimate: %v", err)

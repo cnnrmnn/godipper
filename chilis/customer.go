@@ -9,12 +9,17 @@ import (
 	"golang.org/x/net/html"
 )
 
-type Customer struct {
-	Address   Address `json:"address"`
-	FirstName string  `json:"firstName"`
-	LastName  string  `json:"lastName"`
-	Phone     string  `json:"phone"`
-	Email     string  `json:"email"`
+// A Customer provides access to all of the customer-related information that
+// is needed to place a Chili's order. It isn't implemented as a concrete type
+// (like all of the other types in the package) so that developers are free to
+// define their own concrete types for users/customers that may contain more
+// information than this package needs.
+type Customer interface {
+	Address() Address
+	FirstName() string
+	LastName() string
+	Phone() string
+	Email() string
 }
 
 type OrderInfo struct {
@@ -25,9 +30,9 @@ type OrderInfo struct {
 	DeliveryTime  string `json:"deliveryTime"`
 }
 
-// form adds all of the customer's information to a form map with the default
-// values for every checkout request
-func (c Customer) form(doc *html.Node) (url.Values, error) {
+// checkoutForm adds all of the customer's information to a form map with the default
+// values for every checkout request.
+func checkoutForm(doc *html.Node, c Customer) (url.Values, error) {
 	form := url.Values{}
 	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
 	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
@@ -39,13 +44,13 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	form.Add("payment", "online")
 	form.Add("silverwareOptIn", "true")
 	form.Add("smsOptIn", "true")
-	form.Add("deliveryAddress", c.Address.chilis())
-	form.Add("deliveryAddress2", c.Address.Unit)
-	form.Add("firstName", c.FirstName)
-	form.Add("lastName", c.LastName)
-	form.Add("contactPhone", c.Phone)
-	form.Add("email", c.Email)
-	form.Add("deliveryAddlNotes", c.Address.Notes)
+	form.Add("deliveryAddress", c.Address().chilis())
+	form.Add("deliveryAddress2", c.Address().Unit)
+	form.Add("firstName", c.FirstName())
+	form.Add("lastName", c.LastName())
+	form.Add("contactPhone", c.Phone())
+	form.Add("email", c.Email())
+	form.Add("deliveryAddlNotes", c.Address().Notes)
 	date, time, err := parseASAP(doc)
 	if err != nil {
 		return nil, fmt.Errorf("creating checkout form: %w", err)
@@ -68,12 +73,13 @@ func (c Customer) form(doc *html.Node) (url.Values, error) {
 	return form, nil
 }
 
-// valid returns an error if any of the customer's fields are invalid.
-func (c Customer) valid() error {
-	if err := c.validPhone(); err != nil {
+// validCustomer returns an error if any of the customer's methods return
+// invalid values.
+func validCustomer(c Customer) error {
+	if err := validPhone(c.Phone()); err != nil {
 		return err
 	}
-	if err := c.validEmail(); err != nil {
+	if err := validEmail(c.Email()); err != nil {
 		return err
 	}
 	return nil
@@ -81,9 +87,9 @@ func (c Customer) valid() error {
 
 // validPhone returns an error if the customer's phone isn't a string of ten
 // digit runes.
-func (c Customer) validPhone() error {
+func validPhone(phone string) error {
 	n := 0
-	for _, digit := range c.Phone {
+	for _, digit := range phone {
 		if digit < '0' || digit > '9' {
 			return BadRequestError{"phone"}
 		}
@@ -96,8 +102,8 @@ func (c Customer) validPhone() error {
 }
 
 // validEmail returns an error if the customer's email doesn't have an @ rune.
-func (c Customer) validEmail() error {
-	for _, r := range c.Email {
+func validEmail(email string) error {
+	for _, r := range email {
 		if r == '@' {
 			return nil
 		}
