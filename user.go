@@ -6,10 +6,10 @@ import (
 )
 
 type User struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
+	firstName string `json:"firstName"`
+	lastName  string `json:"lastName"`
+	phone     string `json:"phone"`
+	email     string `json:"email"`
 }
 
 var userType = graphql.NewObject(
@@ -17,7 +17,7 @@ var userType = graphql.NewObject(
 		Name: "User",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
-				Type: graphql.String,
+				Type: graphql.Int,
 			},
 			"firstName": &graphql.Field{
 				Type: graphql.String,
@@ -35,22 +35,22 @@ var userType = graphql.NewObject(
 	},
 )
 
-func (u User) Addresss() {
+func (u User) Addresss() chilis.Address {
 	return chilis.Address{}
 }
 
-func (u User) FirstName() {
-	return u.FirstName
+func (u User) FirstName() string {
+	return u.firstName
 }
 
-func (u User) LastName() {
-	return u.LastName
+func (u User) LastName() string {
+	return u.lastName
 }
 
-func (u User) Phone() {
-	return u.Phone
+func (u User) Phone() string {
+	return u.phone
 }
 
-func (u User) Email() {
-	return u.Email
+func (u User) Email() string {
+	return u.email
 }
