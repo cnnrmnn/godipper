@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/cnnrmnn/godipper/chilis"
 	"github.com/graphql-go/graphql"
 )
 
 type User struct {
-	firstName string `json:"firstName"`
-	lastName  string `json:"lastName"`
-	phone     string `json:"phone"`
-	email     string `json:"email"`
+	ID        string `json:"id"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
 }
 
 var userType = graphql.NewObject(
@@ -34,23 +34,3 @@ var userType = graphql.NewObject(
 		},
 	},
 )
-
-func (u User) Addresss() chilis.Address {
-	return chilis.Address{}
-}
-
-func (u User) FirstName() string {
-	return u.firstName
-}
-
-func (u User) LastName() string {
-	return u.lastName
-}
-
-func (u User) Phone() string {
-	return u.phone
-}
-
-func (u User) Email() string {
-	return u.email
-}
