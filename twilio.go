@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/graphql-go/graphql"
 )
 
 var twilioAccountSID = os.Getenv("TWILIO_ACCOUNT_SID")
@@ -76,4 +78,28 @@ func checkToken(to, code string) (bool, error) {
 		return false, fmt.Errorf("failed to find status: %v", err)
 	}
 	return status == "approved", nil
+}
+
+func sendCode() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewObject(
+			graphql.ObjectConfig{
+				Name: "Phone",
+				Fields: graphql.Fields{
+					"exists": &graphql.Field{Type: graphql.Boolean},
+				},
+			}),
+		Args: graphql.FieldConfigArgument{
+			"phone": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			phone := p.Args["phone"].(string)
+			if err := sendToken(phone); err != nil {
+				return nil, err
+			}
+			return map[string]interface{}{"exists": false}, nil
+		},
+	}
 }
