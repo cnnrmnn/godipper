@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/alexedwards/scs/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/graphql-go/handler"
 )
 
 type App struct {
+	sm    *scs.SessionManager
 	users interface {
 		ByID(id int) (*User, error)
 		Create(u *User) (*User, error)
@@ -24,7 +26,10 @@ func main() {
 	}
 	defer db.Close()
 
+	sm := scs.New()
+
 	app := &App{
+		sm:    sm,
 		users: UserService{db: db},
 	}
 
@@ -39,6 +44,6 @@ func main() {
 		GraphiQL: true,
 	})
 
-	http.Handle("/graphql", h)
+	http.Handle("/graphql", sm.LoadAndSave(h))
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }

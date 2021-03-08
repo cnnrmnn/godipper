@@ -3,6 +3,7 @@ module github.com/cnnrmnn/godipper
 go 1.16
 
 require (
+	github.com/alexedwards/scs/v2 v2.4.0 // indirect
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/durango/go-credit-card v0.0.0-20200501133251-afc6bc77117d // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
