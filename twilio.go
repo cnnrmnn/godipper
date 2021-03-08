@@ -80,15 +80,9 @@ func checkToken(to, code string) (bool, error) {
 	return status == "approved", nil
 }
 
-func sendCode() *graphql.Field {
+func sendCode(app *App) *graphql.Field {
 	return &graphql.Field{
-		Type: graphql.NewObject(
-			graphql.ObjectConfig{
-				Name: "Phone",
-				Fields: graphql.Fields{
-					"exists": &graphql.Field{Type: graphql.Boolean},
-				},
-			}),
+		Type: graphql.Boolean,
 		Args: graphql.FieldConfigArgument{
 			"phone": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.String),
@@ -99,7 +93,8 @@ func sendCode() *graphql.Field {
 			if err := sendToken(phone); err != nil {
 				return nil, err
 			}
-			return map[string]interface{}{"exists": false}, nil
+			_, err := app.users.FindByPhone(phone)
+			return err == nil, nil
 		},
 	}
 }

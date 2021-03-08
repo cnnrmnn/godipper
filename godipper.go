@@ -15,6 +15,7 @@ type App struct {
 	sm    *scs.SessionManager
 	users interface {
 		FindByID(id int) (*User, error)
+		FindByPhone(phone string) (*User, error)
 		Create(u *User, code string) error
 		Authenticate(phone, code string) (*User, error)
 	}

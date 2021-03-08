@@ -52,6 +52,16 @@ func (us UserService) FindByID(id int) (*User, error) {
 	return &u, nil
 }
 
+func (us UserService) FindByPhone(phone string) (*User, error) {
+	var u User
+	err := us.db.QueryRow("SELECT * FROM user WHERE phone = ?", phone).
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	if err != nil {
+		return nil, fmt.Errorf("finding user by phone: %v", err)
+	}
+	return &u, nil
+}
+
 func (us UserService) Create(u *User, code string) error {
 	ok, err := checkToken(u.Phone, code)
 	if err != nil {
