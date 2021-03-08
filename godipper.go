@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -16,8 +17,9 @@ type App struct {
 	users interface {
 		FindByID(id int) (*User, error)
 		FindByPhone(phone string) (*User, error)
-		Create(u *User, code string) error
-		Authenticate(phone, code string) (*User, error)
+		signUp(u *User, code string, ctx context.Context) error
+		logIn(phone, code string, ctx context.Context) (*User, error)
+		idFromSession(ctx context.Context) int
 	}
 }
 
@@ -31,8 +33,7 @@ func main() {
 	sm := scs.New()
 
 	app := &App{
-		sm:    sm,
-		users: UserService{db: db},
+		users: UserService{db: db, sm: sm},
 	}
 
 	schema, err := schema(app)
