@@ -15,7 +15,7 @@ type App struct {
 	sm    *scs.SessionManager
 	users interface {
 		FindByID(id int) (*User, error)
-		Create(u *User) error
+		Create(u *User, code string) error
 	}
 }
 

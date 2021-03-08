@@ -52,7 +52,14 @@ func (us UserService) FindByID(id int) (*User, error) {
 	return &u, nil
 }
 
-func (us UserService) Create(u *User) error {
+func (us UserService) Create(u *User, code string) error {
+	ok, err := checkToken(u.Phone, code)
+	if err != nil {
+		return errors.New("couldn't check verification code")
+	}
+	if !ok {
+		return errors.New("verification code is invalid")
+	}
 	q := `INSERT INTO user (first_name, last_name, phone, email)
 				VALUES (?, ?, ?, ?)`
 	stmt, err := us.db.Prepare(q)
@@ -71,25 +78,24 @@ func (us UserService) Create(u *User) error {
 	return nil
 }
 
-func user(app *App) *graphql.Field {
+func me(app *App) *graphql.Field {
 	return &graphql.Field{
 		Type: UserType,
-		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			id, ok := p.Args["id"].(int)
-			if ok {
-				return app.users.FindByID(id)
+			id := app.sm.GetInt(p.Context, "id")
+			if id == 0 {
+				return nil, errors.New("no session found")
 			}
-			return nil, nil
+			u, err := app.users.FindByID(id)
+			if err != nil {
+				return nil, err
+			}
+			return u, nil
 		},
 	}
 }
 
-func createUser(app *App) *graphql.Field {
+func signUp(app *App) *graphql.Field {
 	return &graphql.Field{
 		Type: UserType,
 		Args: graphql.FieldConfigArgument{
@@ -105,6 +111,9 @@ func createUser(app *App) *graphql.Field {
 			"email": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.String),
 			},
+			"code": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			u := &User{
@@ -113,12 +122,16 @@ func createUser(app *App) *graphql.Field {
 				Phone:     p.Args["phone"].(string),
 				Email:     p.Args["email"].(string),
 			}
-			err := app.users.Create(u)
+			err := app.users.Create(u, p.Args["code"].(string))
 			if err != nil {
 				return nil, err
 			}
+			err = app.sm.RenewToken(p.Context)
+			if err != nil {
+				return nil, errors.New("failed to renew session token")
+			}
+			app.sm.Put(p.Context, "id", u.ID)
 			return u, nil
 		},
 	}
-
 }

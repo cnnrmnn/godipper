@@ -9,14 +9,14 @@ import (
 // by functions defined elsewhere.
 func schema(app *App) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
-		"user": user(app),
+		"me": me(app),
 	}
 	queryType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},
 	)
 	mutationFields := graphql.Fields{
-		"sendCode":   sendCode(),
-		"createUser": createUser(app),
+		"sendCode": sendCode(),
+		"signUp":   signUp(app),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},
