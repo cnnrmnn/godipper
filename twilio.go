@@ -44,7 +44,7 @@ func sendToken(to string) error {
 		return fmt.Errorf("sending verification code: %v", err)
 	}
 	resp.Body.Close()
-	if resp.Status != "201 Created" {
+	if resp.Status[:3] != "201" {
 		return errors.New("failed to send verification code")
 	}
 	return nil
