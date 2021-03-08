@@ -78,6 +78,24 @@ func (us UserService) Create(u *User, code string) error {
 	return nil
 }
 
+func (us UserService) Authenticate(phone, code string) (*User, error) {
+	ok, err := checkToken(phone, code)
+	if err != nil {
+		return nil, errors.New("couldn't check verification code")
+	}
+	if !ok {
+		return nil, errors.New("verification code is invalid")
+	}
+	var u User
+	q := "SELECT * FROM user WHERE phone = ?"
+	err = us.db.QueryRow(q, phone).
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	if err != nil {
+		return nil, errors.New("failed to get user ID")
+	}
+	return &u, nil
+}
+
 func me(app *App) *graphql.Field {
 	return &graphql.Field{
 		Type: UserType,
@@ -123,6 +141,34 @@ func signUp(app *App) *graphql.Field {
 				Email:     p.Args["email"].(string),
 			}
 			err := app.users.Create(u, p.Args["code"].(string))
+			if err != nil {
+				return nil, err
+			}
+			err = app.sm.RenewToken(p.Context)
+			if err != nil {
+				return nil, errors.New("failed to renew session token")
+			}
+			app.sm.Put(p.Context, "id", u.ID)
+			return u, nil
+		},
+	}
+}
+
+func logIn(app *App) *graphql.Field {
+	return &graphql.Field{
+		Type: UserType,
+		Args: graphql.FieldConfigArgument{
+			"phone": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"code": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			phone := p.Args["phone"].(string)
+			code := p.Args["code"].(string)
+			u, err := app.users.Authenticate(phone, code)
 			if err != nil {
 				return nil, err
 			}

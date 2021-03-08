@@ -16,6 +16,7 @@ type App struct {
 	users interface {
 		FindByID(id int) (*User, error)
 		Create(u *User, code string) error
+		Authenticate(phone, code string) (*User, error)
 	}
 }
 
