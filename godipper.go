@@ -15,11 +15,10 @@ import (
 type App struct {
 	sm    *scs.SessionManager
 	users interface {
-		FindByID(id int) (*User, error)
 		FindByPhone(phone string) (*User, error)
 		signUp(u *User, code string, ctx context.Context) error
 		logIn(phone, code string, ctx context.Context) (*User, error)
-		idFromSession(ctx context.Context) int
+		phoneFromSession(ctx context.Context) string
 	}
 }
 

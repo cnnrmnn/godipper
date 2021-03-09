@@ -1,0 +1,5 @@
+ALTER TABLE user
+DROP COLUMN user_id;
+
+ALTER TABLE user
+ADD CONSTRAINT pk_user PRIMARY KEY (phone);
