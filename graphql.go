@@ -7,18 +7,18 @@ import (
 // schema initializes the query and mutation types and returns the
 // the application's GraphQL schema. Other objects and fields are initialized
 // by functions defined elsewhere.
-func schema(app *App) (graphql.Schema, error) {
+func schema(a *app) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
-		"me": me(app),
+		"me": me(a),
 	}
 	queryType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},
 	)
 	mutationFields := graphql.Fields{
-		"sendCode": sendCode(app),
-		"signUp":   signUp(app),
-		"logIn":    logIn(app),
-		"logOut":   logOut(app),
+		"sendCode": sendCode(a),
+		"signUp":   signUp(a),
+		"logIn":    logIn(a),
+		"logOut":   logOut(a),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},

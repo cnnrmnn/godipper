@@ -12,10 +12,10 @@ import (
 	"github.com/graphql-go/handler"
 )
 
-type App struct {
+type app struct {
 	sm    *scs.SessionManager
 	users interface {
-		FindByPhone(phone string) (*User, error)
+		findByPhone(phone string) (*User, error)
 		signUp(u *User, code string, ctx context.Context) error
 		logIn(phone, code string, ctx context.Context) (*User, error)
 		logOut(ctx context.Context) error
@@ -32,11 +32,11 @@ func main() {
 
 	sm := scs.New()
 
-	app := &App{
-		users: UserService{db: db, sm: sm},
+	a := &app{
+		users: userService{db: db, sm: sm},
 	}
 
-	schema, err := schema(app)
+	schema, err := schema(a)
 	if err != nil {
 		log.Fatalf("starting server: %v", err)
 	}

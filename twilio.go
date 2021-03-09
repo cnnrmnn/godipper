@@ -80,7 +80,7 @@ func checkToken(to, code string) (bool, error) {
 	return status == "approved", nil
 }
 
-func sendCode(app *App) *graphql.Field {
+func sendCode(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.Boolean,
 		Args: graphql.FieldConfigArgument{
@@ -93,7 +93,7 @@ func sendCode(app *App) *graphql.Field {
 			if err := sendToken(phone); err != nil {
 				return nil, err
 			}
-			_, err := app.users.FindByPhone(phone)
+			_, err := a.users.findByPhone(phone)
 			return err == nil, nil
 		},
 	}
