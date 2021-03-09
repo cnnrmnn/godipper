@@ -101,6 +101,10 @@ func (us UserService) logIn(phone, code string, ctx context.Context) (*User, err
 	return &u, nil
 }
 
+func (us UserService) logOut(ctx context.Context) error {
+	return us.sm.Destroy(ctx)
+}
+
 func (us UserService) phoneFromSession(ctx context.Context) string {
 	return us.sm.GetString(ctx, "phone")
 }
@@ -186,6 +190,19 @@ func logIn(app *App) *graphql.Field {
 				return nil, err
 			}
 			return u, nil
+		},
+	}
+}
+
+func logOut(app *App) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.Boolean,
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			err := app.users.logOut(p.Context)
+			if err != nil {
+				return nil, fmt.Errorf("failed to destroy session: %v", err)
+			}
+			return true, nil
 		},
 	}
 }

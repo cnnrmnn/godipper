@@ -18,6 +18,7 @@ func schema(app *App) (graphql.Schema, error) {
 		"sendCode": sendCode(app),
 		"signUp":   signUp(app),
 		"logIn":    logIn(app),
+		"logOut":   logOut(app),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},

@@ -18,6 +18,7 @@ type App struct {
 		FindByPhone(phone string) (*User, error)
 		signUp(u *User, code string, ctx context.Context) error
 		logIn(phone, code string, ctx context.Context) (*User, error)
+		logOut(ctx context.Context) error
 		phoneFromSession(ctx context.Context) string
 	}
 }
