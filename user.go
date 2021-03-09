@@ -10,6 +10,8 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+// A User is composed of all of the information associated with a user of the
+// application.
 type User struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
@@ -17,11 +19,15 @@ type User struct {
 	Email     string `json:"email"`
 }
 
+// userService implements the app.users interface. Its methods manage users and
+// sessions.
 type userService struct {
 	db *sql.DB
 	sm *scs.SessionManager
 }
 
+// findByPhone returns the user with the given phone or an error if no user
+// has the given phone.
 func (us userService) findByPhone(phone string) (*User, error) {
 	var u User
 	err := us.db.QueryRow("SELECT * FROM user WHERE phone = ?", phone).
@@ -32,6 +38,8 @@ func (us userService) findByPhone(phone string) (*User, error) {
 	return &u, nil
 }
 
+// signUp creates a row in the user table provided that the verification code
+// valid. It creates a session for the user given the request context.
 func (us userService) signUp(u *User, code string, ctx context.Context) error {
 	ok, err := checkToken(u.Phone, code)
 	if err != nil {
@@ -57,6 +65,8 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 	return nil
 }
 
+// logIn creates a session for the user with the given phone provided that the
+// verification code is valid and returns that user.
 func (us userService) logIn(phone, code string, ctx context.Context) (*User, error) {
 	ok, err := checkToken(phone, code)
 	if err != nil {
@@ -79,14 +89,18 @@ func (us userService) logIn(phone, code string, ctx context.Context) (*User, err
 	return &u, nil
 }
 
+// logOut destroys the current session given the request context.
 func (us userService) logOut(ctx context.Context) error {
 	return us.sm.Destroy(ctx)
 }
 
+// phoneFromSession returns the phone associated with the current session given
+// the request context.
 func (us userService) phoneFromSession(ctx context.Context) string {
 	return us.sm.GetString(ctx, "phone")
 }
 
+// createSession creates a session for the given phone.
 func createSession(phone string, sm *scs.SessionManager, ctx context.Context) error {
 	err := sm.RenewToken(ctx)
 	if err != nil {
@@ -96,6 +110,7 @@ func createSession(phone string, sm *scs.SessionManager, ctx context.Context) er
 	return nil
 }
 
+// userType is the GraphQL type for User.
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
@@ -115,6 +130,8 @@ var userType = graphql.NewObject(
 	},
 )
 
+// me returns a GraphQL query field that resolves to the user associated with
+// the current session.
 func me(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
@@ -132,6 +149,8 @@ func me(a *app) *graphql.Field {
 	}
 }
 
+// signUp returns a GraphQL mutation field that creates a user and resolves to
+// that user if successful.
 func signUp(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
@@ -168,6 +187,8 @@ func signUp(a *app) *graphql.Field {
 	}
 }
 
+// logIn returns a GraphQL mutation field that creates a new session and
+// resolves to the user associated with that session if successful.
 func logIn(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
@@ -191,6 +212,8 @@ func logIn(a *app) *graphql.Field {
 	}
 }
 
+// logout returns a GraphQL mutation field that destroys the currents session
+// and resolves to a boolean value indicating if the operation was successful.
 func logOut(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.Boolean,

@@ -12,6 +12,8 @@ import (
 	"github.com/graphql-go/handler"
 )
 
+// app defines interface types for services used by GraphQL resolvers
+// throughout the application.
 type app struct {
 	sm    *scs.SessionManager
 	users interface {

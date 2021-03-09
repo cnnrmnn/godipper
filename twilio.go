@@ -80,6 +80,9 @@ func checkToken(to, code string) (bool, error) {
 	return status == "approved", nil
 }
 
+// sendCode returns a GraphQL mutation field that sends a verification code to
+// the given phone and resolves to a boolean value indicating if a user with
+// the given phone exists.
 func sendCode(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.Boolean,

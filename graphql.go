@@ -4,9 +4,9 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
-// schema initializes the query and mutation types and returns the
-// the application's GraphQL schema. Other objects and fields are initialized
-// by functions defined elsewhere.
+// schema initializes the query and mutation fields and returns the
+// application's GraphQL schema. Other objects and fields are initialized
+// elsewhere.
 func schema(a *app) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
 		"me": me(a),
