@@ -1,0 +1,2 @@
+ALTER TABLE address
+ALTER unit SET DEFAULT '';
