@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -12,19 +11,6 @@ import (
 	"github.com/graphql-go/handler"
 )
 
-// app defines interface types for services used by GraphQL resolvers
-// throughout the application.
-type app struct {
-	users interface {
-		findByID(id int) (*User, error)
-		findByPhone(phone string) (*User, error)
-		signUp(u *User, code string, ctx context.Context) error
-		logIn(phone, code string, ctx context.Context) (*User, error)
-		logOut(ctx context.Context) error
-		idFromSession(ctx context.Context) int
-	}
-}
-
 func main() {
 	db, err := sql.Open("mysql", os.Getenv("DSN"))
 	if err != nil {
@@ -34,11 +20,11 @@ func main() {
 
 	sm := scs.New()
 
-	a := &app{
-		users: userService{db: db, sm: sm},
+	svc := &service{
+		user: userService{db: db, sm: sm},
 	}
 
-	schema, err := schema(a)
+	schema, err := schema(svc)
 	if err != nil {
 		log.Fatalf("starting server: %v", err)
 	}

@@ -150,15 +150,15 @@ var userType = graphql.NewObject(
 
 // me returns a GraphQL query field that resolves to the user associated with
 // the current session.
-func me(a *app) *graphql.Field {
+func me(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			id := a.users.idFromSession(p.Context)
+			id := svc.user.idFromSession(p.Context)
 			if id == 0 {
 				return nil, errors.New("no session found")
 			}
-			u, err := a.users.findByID(id)
+			u, err := svc.user.findByID(id)
 			if err != nil {
 				return nil, err
 			}
@@ -169,7 +169,7 @@ func me(a *app) *graphql.Field {
 
 // signUp returns a GraphQL mutation field that creates a user and resolves to
 // that user if successful.
-func signUp(a *app) *graphql.Field {
+func signUp(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Args: graphql.FieldConfigArgument{
@@ -196,7 +196,7 @@ func signUp(a *app) *graphql.Field {
 				Phone:     p.Args["phone"].(string),
 				Email:     p.Args["email"].(string),
 			}
-			err := a.users.signUp(u, p.Args["code"].(string), p.Context)
+			err := svc.user.signUp(u, p.Args["code"].(string), p.Context)
 			if err != nil {
 				return nil, err
 			}
@@ -207,7 +207,7 @@ func signUp(a *app) *graphql.Field {
 
 // logIn returns a GraphQL mutation field that creates a new session and
 // resolves to the user associated with that session if successful.
-func logIn(a *app) *graphql.Field {
+func logIn(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Args: graphql.FieldConfigArgument{
@@ -221,7 +221,7 @@ func logIn(a *app) *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			phone := p.Args["phone"].(string)
 			code := p.Args["code"].(string)
-			u, err := a.users.logIn(phone, code, p.Context)
+			u, err := svc.user.logIn(phone, code, p.Context)
 			if err != nil {
 				return nil, err
 			}
@@ -232,11 +232,11 @@ func logIn(a *app) *graphql.Field {
 
 // logout returns a GraphQL mutation field that destroys the currents session
 // and resolves to a boolean value indicating if the operation was successful.
-func logOut(a *app) *graphql.Field {
+func logOut(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.Boolean,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			err := a.users.logOut(p.Context)
+			err := svc.user.logOut(p.Context)
 			if err != nil {
 				return false, fmt.Errorf("failed to destroy session: %v", err)
 			}

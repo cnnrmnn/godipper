@@ -83,7 +83,7 @@ func checkToken(to, code string) (bool, error) {
 // sendCode returns a GraphQL mutation field that sends a verification code to
 // the given phone and resolves to a boolean value indicating if a user with
 // the given phone exists.
-func sendCode(a *app) *graphql.Field {
+func sendCode(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.Boolean,
 		Args: graphql.FieldConfigArgument{
@@ -96,7 +96,7 @@ func sendCode(a *app) *graphql.Field {
 			if err := sendToken(phone); err != nil {
 				return nil, err
 			}
-			_, err := a.users.findByPhone(phone)
+			_, err := svc.user.findByPhone(phone)
 			return err == nil, nil
 		},
 	}
