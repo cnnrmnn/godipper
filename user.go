@@ -83,8 +83,8 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 	return nil
 }
 
-// logIn creates a session for the user with the given phone provided that the
-// verification code is valid and returns that user.
+// logIn creates a session for the user with the given phoneand returns that
+// user provided that the verification code is valid.
 func (us userService) logIn(phone, code string, ctx context.Context) (*User, error) {
 	ok, err := checkToken(phone, code)
 	if err != nil {
@@ -109,7 +109,7 @@ func (us userService) logOut(ctx context.Context) error {
 	return us.sm.Destroy(ctx)
 }
 
-// phoneFromSession returns the ID associated with the current session given
+// idFromSession returns the ID associated with the current session given
 // the request context.
 func (us userService) idFromSession(ctx context.Context) int {
 	return us.sm.GetInt(ctx, "id")
