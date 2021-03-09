@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
@@ -9,6 +11,7 @@ import (
 
 type Address struct {
 	ID     int    `json:"id"`
+	UserID int    `json:"userId"`
 	Street string `json:"street"`
 	Unit   string `json:"unit"`
 	City   string `json:"city"`
@@ -19,11 +22,30 @@ type Address struct {
 
 type addressService struct {
 	db *sql.DB
+	us user
 }
 
-func (as addressService) findByUser(uid int) ([]*Address, error) {
+func (as addressService) findByID(id int) (*Address, error) {
 	q := `
-		SELECT address_id, street, unit, city, state, zip
+		SELECT address_id, user_id, street, unit, city, state, zip, notes
+		FROM address
+		WHERE address_id = ?`
+	var a Address
+	err := as.db.QueryRow(q, id).
+		Scan(&a.ID, &a.UserID, &a.Street, &a.Unit, &a.City, &a.State, &a.Zip, &a.Notes)
+	if err != nil {
+		return nil, fmt.Errorf("finding address by ID: %v", err)
+	}
+	return &a, nil
+}
+
+func (as addressService) findByUser(ctx context.Context) ([]*Address, error) {
+	uid, err := as.us.idFromSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q := `
+		SELECT address_id, user_id, street, unit, city, state, zip, notes
 		FROM address
 		WHERE user_id = ?`
 	rows, err := as.db.Query(q, uid)
@@ -34,7 +56,7 @@ func (as addressService) findByUser(uid int) ([]*Address, error) {
 	var addrs []*Address
 	for rows.Next() {
 		var a Address
-		err := rows.Scan(&a.ID, &a.Street, &a.Unit, &a.City, &a.State, &a.Zip, &a.Notes)
+		err := rows.Scan(&a.ID, &a.UserID, &a.Street, &a.Unit, &a.City, &a.State, &a.Zip, &a.Notes)
 		if err != nil {
 			return nil, fmt.Errorf("reading address found by user ID: %v", err)
 		}
@@ -47,16 +69,21 @@ func (as addressService) findByUser(uid int) ([]*Address, error) {
 	return addrs, nil
 }
 
-func (as addressService) create(a *Address, uid int) error {
+func (as addressService) create(a *Address, ctx context.Context) error {
+	uid, err := as.us.idFromSession(ctx)
+	if err != nil {
+		return err
+	}
+	a.UserID = uid
 	q := `
-		INSERT INTO address (user_id, street, unit, city, state, zip)
-		VALUES (?, ?, ?, ?, ?, ?)`
+		INSERT INTO address (user_id, street, unit, city, state, zip, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`
 	stmt, err := as.db.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("failed to prepare address insertion query: %v", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(uid, a.Street, a.Unit, a.City, a.State, a.Zip)
+	res, err := stmt.Exec(a.UserID, a.Street, a.Unit, a.City, a.State, a.Zip, a.Notes)
 	if err != nil {
 		return fmt.Errorf("failed to execute address insertion query: %v", err)
 	}
@@ -68,13 +95,24 @@ func (as addressService) create(a *Address, uid int) error {
 	return nil
 }
 
-func (as addressService) destroy(id int) error {
-	q := `DELETE FROM address WHERE address_id = ?`
-	_, err := as.db.Exec(q, id)
+func (as addressService) destroy(id int, ctx context.Context) (*Address, error) {
+	uid, err := as.us.idFromSession(ctx)
 	if err != nil {
-		return fmt.Errorf("destroying address by ID: %v", err)
+		return nil, err
 	}
-	return nil
+	a, err := as.findByID(id)
+	if err != nil {
+		return nil, errors.New("failed to find address")
+	}
+	if a.UserID != uid {
+		return nil, errors.New("address doesn't belong to user")
+	}
+	q := `DELETE FROM address WHERE address_id = ?`
+	_, err = as.db.Exec(q, id)
+	if err != nil {
+		return nil, fmt.Errorf("destroying address by ID: %v", err)
+	}
+	return a, nil
 }
 
 var addressType = graphql.NewObject(
@@ -82,6 +120,9 @@ var addressType = graphql.NewObject(
 		Name: "Address",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"userId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
 			"street": &graphql.Field{
@@ -106,16 +147,11 @@ var addressType = graphql.NewObject(
 	},
 )
 
-func addressByUser(svc *service) *graphql.Field {
+func addresses(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewList(graphql.NewNonNull(addressType)),
-		Args: graphql.FieldConfigArgument{
-			"userId": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.Int),
-			},
-		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			addrs, err := svc.address.findByUser(p.Args["userId"].(int))
+			addrs, err := svc.address.findByUser(p.Context)
 			if err != nil {
 				return nil, err
 			}
@@ -128,9 +164,6 @@ func createAddress(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewNonNull(addressType),
 		Args: graphql.FieldConfigArgument{
-			"userId": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.Int),
-			},
 			"street": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.String),
 			},
@@ -165,7 +198,8 @@ func createAddress(svc *service) *graphql.Field {
 			if ok {
 				a.Notes = notes
 			}
-			err := svc.address.create(a, p.Args["userId"].(int))
+
+			err := svc.address.create(a, p.Context)
 			if err != nil {
 				return nil, err
 			}
@@ -176,18 +210,19 @@ func createAddress(svc *service) *graphql.Field {
 
 func destroyAddress(svc *service) *graphql.Field {
 	return &graphql.Field{
-		Type: graphql.NewNonNull(graphql.Boolean),
+		Type: graphql.NewNonNull(addressType),
 		Args: graphql.FieldConfigArgument{
 			"id": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			err := svc.address.destroy(p.Args["id"].(int))
+			id := p.Args["id"].(int)
+			a, err := svc.address.destroy(id, p.Context)
 			if err != nil {
 				return false, err
 			}
-			return true, nil
+			return a, nil
 		},
 	}
 }

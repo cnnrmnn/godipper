@@ -20,9 +20,10 @@ func main() {
 
 	sm := scs.New()
 
+	us := userService{db: db, sm: sm}
 	svc := &service{
-		user:    userService{db: db, sm: sm},
-		address: addressService{db: db},
+		user:    us,
+		address: addressService{db: db, us: us},
 	}
 
 	schema, err := schema(svc)

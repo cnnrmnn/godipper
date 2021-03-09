@@ -9,8 +9,8 @@ import (
 // elsewhere.
 func schema(svc *service) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
-		"me":            me(svc),
-		"addressByUser": addressByUser(svc),
+		"me":        me(svc),
+		"addresses": addresses(svc),
 	}
 	queryType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},
