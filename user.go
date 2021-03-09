@@ -75,10 +75,7 @@ func (us userService) logIn(phone, code string, ctx context.Context) (*User, err
 	if !ok {
 		return nil, errors.New("verification code is invalid")
 	}
-	var u User
-	q := "SELECT * FROM user WHERE phone = ?"
-	err = us.db.QueryRow(q, phone).
-		Scan(&u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	u, err := us.findByPhone(phone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authenticated user: %v", err)
 	}
@@ -86,7 +83,7 @@ func (us userService) logIn(phone, code string, ctx context.Context) (*User, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %v", err)
 	}
-	return &u, nil
+	return u, nil
 }
 
 // logOut destroys the current session given the request context.
