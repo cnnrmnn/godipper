@@ -220,7 +220,7 @@ func logOut(a *app) *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			err := a.users.logOut(p.Context)
 			if err != nil {
-				return nil, fmt.Errorf("failed to destroy session: %v", err)
+				return false, fmt.Errorf("failed to destroy session: %v", err)
 			}
 			return true, nil
 		},
