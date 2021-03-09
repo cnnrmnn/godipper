@@ -119,8 +119,12 @@ func (us userService) logOut(ctx context.Context) error {
 
 // idFromSession returns the ID associated with the current session given
 // the request context.
-func (us userService) idFromSession(ctx context.Context) int {
-	return us.sm.GetInt(ctx, "id")
+func (us userService) idFromSession(ctx context.Context) (int, error) {
+	id := us.sm.GetInt(ctx, "id")
+	if id == 0 {
+		return 0, errors.New("no session found")
+	}
+	return id, nil
 }
 
 // createSession creates a session for the given id.
@@ -163,9 +167,9 @@ func me(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			id := svc.user.idFromSession(p.Context)
-			if id == 0 {
-				return nil, errors.New("no session found")
+			id, err := svc.user.idFromSession(p.Context)
+			if err != nil {
+				return nil, err
 			}
 			u, err := svc.user.findByID(id)
 			if err != nil {

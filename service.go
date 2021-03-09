@@ -11,7 +11,7 @@ type service struct {
 		signUp(u *User, code string, ctx context.Context) error
 		logIn(phone, code string, ctx context.Context) (*User, error)
 		logOut(ctx context.Context) error
-		idFromSession(ctx context.Context) int
+		idFromSession(ctx context.Context) (int, error)
 	}
 	address interface {
 		findByUser(uid int) ([]*Address, error)
