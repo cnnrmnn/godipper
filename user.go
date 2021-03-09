@@ -13,6 +13,7 @@ import (
 // A User is composed of all of the information associated with a user of the
 // application.
 type User struct {
+	ID        int    `json:"id"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Phone     string `json:"phone"`
@@ -26,14 +27,26 @@ type userService struct {
 	sm *scs.SessionManager
 }
 
+// findByID returns the user with the given ID or an an error if no user has
+// the given ID
+func (us userService) findByID(id int) (*User, error) {
+	var u User
+	err := us.db.QueryRow("SELECT * FROM user where user_id = ?", id).
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	if err != nil {
+		return nil, fmt.Errorf("finding user by id: %v", err)
+	}
+	return &u, nil
+}
+
 // findByPhone returns the user with the given phone or an error if no user
 // has the given phone.
 func (us userService) findByPhone(phone string) (*User, error) {
 	var u User
 	err := us.db.QueryRow("SELECT * FROM user WHERE phone = ?", phone).
-		Scan(&u.FirstName, &u.LastName, &u.Phone, &u.Email)
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
 	if err != nil {
-		return nil, fmt.Errorf("finding user by Phone: %v", err)
+		return nil, fmt.Errorf("finding user by phone: %v", err)
 	}
 	return &u, nil
 }
@@ -54,11 +67,16 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to prepare user insertion query: %v", err)
 	}
-	_, err = stmt.Exec(u.FirstName, u.LastName, u.Phone, u.Email)
+	res, err := stmt.Exec(u.FirstName, u.LastName, u.Phone, u.Email)
 	if err != nil {
 		return fmt.Errorf("failed to execute user insertion query: %v", err)
 	}
-	err = createSession(u.Phone, us.sm, ctx)
+	id, err := res.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to get user ID: %v", err)
+	}
+	u.ID = int(id)
+	err = createSession(u.ID, us.sm, ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create session: %v", err)
 	}
@@ -79,7 +97,7 @@ func (us userService) logIn(phone, code string, ctx context.Context) (*User, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authenticated user: %v", err)
 	}
-	err = createSession(u.Phone, us.sm, ctx)
+	err = createSession(u.ID, us.sm, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %v", err)
 	}
@@ -91,19 +109,19 @@ func (us userService) logOut(ctx context.Context) error {
 	return us.sm.Destroy(ctx)
 }
 
-// phoneFromSession returns the phone associated with the current session given
+// phoneFromSession returns the ID associated with the current session given
 // the request context.
-func (us userService) phoneFromSession(ctx context.Context) string {
-	return us.sm.GetString(ctx, "phone")
+func (us userService) idFromSession(ctx context.Context) int {
+	return us.sm.GetInt(ctx, "id")
 }
 
-// createSession creates a session for the given phone.
-func createSession(phone string, sm *scs.SessionManager, ctx context.Context) error {
+// createSession creates a session for the given id.
+func createSession(id int, sm *scs.SessionManager, ctx context.Context) error {
 	err := sm.RenewToken(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to renew session token: %v", err)
 	}
-	sm.Put(ctx, "phone", phone)
+	sm.Put(ctx, "id", id)
 	return nil
 }
 
@@ -112,6 +130,9 @@ var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "User",
 		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.Int,
+			},
 			"firstName": &graphql.Field{
 				Type: graphql.String,
 			},
@@ -133,11 +154,11 @@ func me(a *app) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			phone := a.users.phoneFromSession(p.Context)
-			if phone == "" {
+			id := a.users.idFromSession(p.Context)
+			if id == 0 {
 				return nil, errors.New("no session found")
 			}
-			u, err := a.users.findByPhone(phone)
+			u, err := a.users.findByID(id)
 			if err != nil {
 				return nil, err
 			}

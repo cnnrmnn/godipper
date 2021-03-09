@@ -16,11 +16,12 @@ import (
 // throughout the application.
 type app struct {
 	users interface {
+		findByID(id int) (*User, error)
 		findByPhone(phone string) (*User, error)
 		signUp(u *User, code string, ctx context.Context) error
 		logIn(phone, code string, ctx context.Context) (*User, error)
 		logOut(ctx context.Context) error
-		phoneFromSession(ctx context.Context) string
+		idFromSession(ctx context.Context) int
 	}
 }
 

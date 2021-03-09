@@ -1,0 +1,8 @@
+CREATE TABLE user (
+    user_id SMALLINT UNSIGNED AUTO_INCREMENT,
+    first_name VARCHAR(35) NOT NULL,
+    last_name VARCHAR(35) NOT NULL,
+    phone CHAR(10) UNIQUE NOT NULL,
+    email VARCHAR(254) UNIQUE NOT NULL,
+    CONSTRAINT pk_user PRIMARY KEY (user_id)
+);
