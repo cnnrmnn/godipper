@@ -15,7 +15,6 @@ import (
 // app defines interface types for services used by GraphQL resolvers
 // throughout the application.
 type app struct {
-	sm    *scs.SessionManager
 	users interface {
 		findByPhone(phone string) (*User, error)
 		signUp(u *User, code string, ctx context.Context) error
