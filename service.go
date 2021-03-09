@@ -13,4 +13,9 @@ type service struct {
 		logOut(ctx context.Context) error
 		idFromSession(ctx context.Context) int
 	}
+	address interface {
+		findByUser(uid int) ([]*Address, error)
+		create(a *Address, uid int) error
+		destroy(id int) error
+	}
 }

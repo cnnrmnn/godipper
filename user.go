@@ -13,11 +13,12 @@ import (
 // A User is composed of all of the information associated with a user of the
 // application.
 type User struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
+	ID                int    `json:"id"`
+	FirstName         string `json:"firstName"`
+	LastName          string `json:"lastName"`
+	Phone             string `json:"phone"`
+	Email             string `json:"email"`
+	SelectedAddressID int    `json:"selectedAddressId"`
 }
 
 // userService implements the app.users interface. Its methods manage users and
@@ -31,8 +32,12 @@ type userService struct {
 // the given ID
 func (us userService) findByID(id int) (*User, error) {
 	var u User
-	err := us.db.QueryRow("SELECT * FROM user where user_id = ?", id).
-		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	q := `
+		SELECT user_id, first_name, last_name, phone, email, selected_address_id
+		FROM user
+		WHERE user_id = ?`
+	err := us.db.QueryRow(q, id).
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email, &u.SelectedAddressID)
 	if err != nil {
 		return nil, fmt.Errorf("finding user by id: %v", err)
 	}
@@ -43,8 +48,12 @@ func (us userService) findByID(id int) (*User, error) {
 // has the given phone.
 func (us userService) findByPhone(phone string) (*User, error) {
 	var u User
-	err := us.db.QueryRow("SELECT * FROM user WHERE phone = ?", phone).
-		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
+	q := `
+		SELECT user_id, first_name, last_name, phone, email, selected_address_id
+		FROM user
+		WHERE phone = ?`
+	err := us.db.QueryRow(q, phone).
+		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email, &u.SelectedAddressID)
 	if err != nil {
 		return nil, fmt.Errorf("finding user by phone: %v", err)
 	}
@@ -144,7 +153,11 @@ var userType = graphql.NewObject(
 			},
 			"email": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
-			}},
+			},
+			"selectedAddressId": &graphql.Field{
+				Type: graphql.Int,
+			},
+		},
 	},
 )
 
