@@ -147,7 +147,7 @@ func createAddress(svc *service) *graphql.Field {
 				Type: graphql.NewNonNull(graphql.String),
 			},
 			"notes": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String),
+				Type: graphql.String,
 			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {

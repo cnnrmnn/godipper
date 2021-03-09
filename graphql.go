@@ -9,16 +9,19 @@ import (
 // elsewhere.
 func schema(svc *service) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
-		"me": me(svc),
+		"me":            me(svc),
+		"addressByUser": addressByUser(svc),
 	}
 	queryType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},
 	)
 	mutationFields := graphql.Fields{
-		"sendCode": sendCode(svc),
-		"signUp":   signUp(svc),
-		"logIn":    logIn(svc),
-		"logOut":   logOut(svc),
+		"sendCode":       sendCode(svc),
+		"signUp":         signUp(svc),
+		"logIn":          logIn(svc),
+		"logOut":         logOut(svc),
+		"createAddress":  createAddress(svc),
+		"destroyAddress": destroyAddress(svc),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},
