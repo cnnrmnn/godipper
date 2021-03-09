@@ -126,7 +126,7 @@ func addressByUser(svc *service) *graphql.Field {
 
 func createAddress(svc *service) *graphql.Field {
 	return &graphql.Field{
-		Type: graphql.NewList(graphql.NewNonNull(addressType)),
+		Type: graphql.NewNonNull(addressType),
 		Args: graphql.FieldConfigArgument{
 			"userId": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.Int),
@@ -153,11 +153,17 @@ func createAddress(svc *service) *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			a := &Address{
 				Street: p.Args["street"].(string),
-				Unit:   p.Args["unit"].(string),
 				City:   p.Args["city"].(string),
 				State:  p.Args["state"].(string),
 				Zip:    p.Args["zip"].(string),
-				Notes:  p.Args["notes"].(string),
+			}
+			unit, ok := p.Args["unit"].(string)
+			if ok {
+				a.Unit = unit
+			}
+			notes, ok := p.Args["notes"].(string)
+			if ok {
+				a.Notes = notes
 			}
 			err := svc.address.create(a, p.Args["userId"].(int))
 			if err != nil {
