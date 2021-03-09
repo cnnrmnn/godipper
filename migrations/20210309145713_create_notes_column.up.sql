@@ -1,0 +1,2 @@
+ALTER TABLE address
+ADD notes VARCHAR(100) DEFAULT '';

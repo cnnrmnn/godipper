@@ -1,0 +1,2 @@
+ALTER TABLE address
+DROP COLUMN notes;
