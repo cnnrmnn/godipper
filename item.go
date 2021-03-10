@@ -8,7 +8,7 @@ import (
 type Item struct {
 	ID             int      `json:"id"`
 	TripleDipperID int      `json:"tripleDipperId"`
-	Value          byte     `json:"value"`
+	ValueID        int      `json:"valueId"`
 	Extras         []*Extra `json:"extras"`
 }
 
@@ -18,7 +18,7 @@ type itemService struct {
 }
 
 func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
-	q := "SELECT item_id, item FROM item WHERE triple_dipper_id = ?"
+	q := "SELECT item_id, item_value_id FROM item WHERE triple_dipper_id = ?"
 	rows, err := is.db.Query(q, tdid)
 	if err != nil {
 		return nil, fmt.Errorf("finding item by triple dipper ID: %v", err)
@@ -27,7 +27,7 @@ func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 	var its []*Item
 	for rows.Next() {
 		it := Item{TripleDipperID: tdid}
-		err = rows.Scan(&it.ID, &it.Value)
+		err = rows.Scan(&it.ID, &it.ValueID)
 		if err != nil {
 			return nil, fmt.Errorf("reading item found by triple dipper ID: %v", err)
 		}
@@ -46,12 +46,12 @@ func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 }
 
 func (is itemService) create(it *Item, tx *sql.Tx) error {
-	q := "INSERT INTO item (triple_dipper_id, item) VALUES(?, ?)"
+	q := "INSERT INTO item (triple_dipper_id, item_value_id) VALUES(?, ?)"
 	stmt, err := tx.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing item insertion query: %v", err)
 	}
-	res, err := stmt.Exec(it.TripleDipperID, it.Value)
+	res, err := stmt.Exec(it.TripleDipperID, it.ValueID)
 	if err != nil {
 		return fmt.Errorf("executing item insertion query: %v", err)
 	}
