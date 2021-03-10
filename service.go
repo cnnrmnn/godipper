@@ -2,6 +2,7 @@ package main
 
 import "context"
 
+// user defines the methods that should be implemented by the user service.
 type user interface {
 	findByID(id int) (*User, error)
 	findByPhone(phone string) (*User, error)
@@ -12,14 +13,18 @@ type user interface {
 	idFromSession(ctx context.Context) (int, error)
 }
 
+// address defines the methods that should be implemented by the address
+// service.
+type address interface {
+	findByID(id int) (*Address, error)
+	findByUser(ctx context.Context) ([]*Address, error)
+	create(a *Address, ctx context.Context) error
+	destroy(id int, ctx context.Context) (*Address, error)
+}
+
 // service defines interface types for services used by GraphQL resolvers
 // throughout the application.
 type service struct {
 	user
-	address interface {
-		findByID(id int) (*Address, error)
-		findByUser(ctx context.Context) ([]*Address, error)
-		create(a *Address, ctx context.Context) error
-		destroy(id int, ctx context.Context) (*Address, error)
-	}
+	address
 }
