@@ -1,6 +1,9 @@
 package main
 
-import "context"
+import (
+	"context"
+	"database/sql"
+)
 
 // user defines the methods that should be implemented by the user service.
 type user interface {
@@ -22,9 +25,27 @@ type address interface {
 	destroy(id int, ctx context.Context) (*Address, error)
 }
 
+type extra interface {
+	findByItem(iid int) ([]*Extra, error)
+	create(e *Extra, tx *sql.Tx) error
+}
+
+type item interface {
+	findByTripleDipper(tdid int) ([]*Item, error)
+	create(it *Item, tx *sql.Tx) error
+}
+
+type tripleDipper interface {
+	findByID(id int) (*TripleDipper, error)
+	create(td *TripleDipper) error
+}
+
 // service defines interface types for services used by GraphQL resolvers
 // throughout the application.
 type service struct {
 	user
 	address
+	extra
+	item
+	tripleDipper
 }

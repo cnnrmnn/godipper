@@ -21,9 +21,16 @@ func main() {
 	sm := scs.New()
 
 	us := userService{db: db, sm: sm}
+	as := addressService{db: db, us: us}
+	es := extraService{db: db}
+	is := itemService{db: db, es: es}
+	tds := tripleDipperService{db: db, is: is}
 	svc := &service{
-		user:    us,
-		address: addressService{db: db, us: us},
+		user:         us,
+		address:      as,
+		extra:        es,
+		item:         is,
+		tripleDipper: tds,
 	}
 
 	schema, err := schema(svc)
