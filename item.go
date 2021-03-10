@@ -9,6 +9,7 @@ type Item struct {
 	ID             int      `json:"id"`
 	TripleDipperID int      `json:"tripleDipperId"`
 	ValueID        int      `json:"valueId"`
+	Value          string   `json:"value"`
 	Extras         []*Extra `json:"extras"`
 }
 
@@ -18,7 +19,11 @@ type itemService struct {
 }
 
 func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
-	q := "SELECT item_id, item_value_id FROM item WHERE triple_dipper_id = ?"
+	q := `
+		SELECT i.item_id, i.triple_dipper_id, i.item_value_id, iv.item_value
+		FROM item i INNER JOIN item_value iv
+		ON i.item_value_id = iv.item_value_id
+		WHERE i.triple_dipper_id = ?`
 	rows, err := is.db.Query(q, tdid)
 	if err != nil {
 		return nil, fmt.Errorf("finding item by triple dipper ID: %v", err)
@@ -26,8 +31,8 @@ func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 	defer rows.Close()
 	var its []*Item
 	for rows.Next() {
-		it := Item{TripleDipperID: tdid}
-		err = rows.Scan(&it.ID, &it.ValueID)
+		var it Item
+		err = rows.Scan(&it.ID, &it.TripleDipperID, &it.ValueID, &it.Value)
 		if err != nil {
 			return nil, fmt.Errorf("reading item found by triple dipper ID: %v", err)
 		}

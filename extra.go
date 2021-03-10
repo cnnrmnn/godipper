@@ -6,9 +6,10 @@ import (
 )
 
 type Extra struct {
-	ID      int `json:"id"`
-	ItemID  int `json:"itemId"`
-	ValueID int `json:"valueId"`
+	ID      int    `json:"id"`
+	ItemID  int    `json:"itemId"`
+	ValueID int    `json:"valueId"`
+	Value   string `json:"value"`
 }
 
 type extraService struct {
@@ -16,7 +17,11 @@ type extraService struct {
 }
 
 func (es extraService) findByItem(iid int) ([]*Extra, error) {
-	q := "SELECT extra_id, extra_value_id FROM extra WHERE item_id = ?"
+	q := `
+		SELECT e.extra_id, e.item_id, e.extra_value_id, ev.extra_value
+		FROM extra e INNER JOIN extra_value ev
+		ON e.extra_value_id = ev.extra_value_id
+		WHERE e.item_id = ?`
 	rows, err := es.db.Query(q, iid)
 	if err != nil {
 		return nil, fmt.Errorf("finding extra by item ID: %v", err)
@@ -24,8 +29,8 @@ func (es extraService) findByItem(iid int) ([]*Extra, error) {
 	defer rows.Close()
 	var exts []*Extra
 	for rows.Next() {
-		e := Extra{ItemID: iid}
-		err = rows.Scan(&e.ID, &e.ValueID)
+		var e Extra
+		err = rows.Scan(&e.ID, &e.ItemID, &e.ValueID, &e.Value)
 		if err != nil {
 			return nil, fmt.Errorf("reading extra found by item ID: %v", err)
 		}
