@@ -59,6 +59,20 @@ func (us userService) findByPhone(phone string) (*User, error) {
 	return &u, nil
 }
 
+// me returns the user associated with the current session, if any, given the
+// request context.
+func (us userService) me(ctx context.Context) (*User, error) {
+	id, err := us.idFromSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	u, err := us.findByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
 // signUp creates a row in the user table provided that the verification code
 // valid. It creates a session for the user given the request context.
 func (us userService) signUp(u *User, code string, ctx context.Context) error {
@@ -167,11 +181,7 @@ func me(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			id, err := svc.user.idFromSession(p.Context)
-			if err != nil {
-				return nil, err
-			}
-			u, err := svc.user.findByID(id)
+			u, err := svc.user.me(p.Context)
 			if err != nil {
 				return nil, err
 			}
