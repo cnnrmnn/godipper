@@ -1,0 +1,2 @@
+ALTER TABLE orders
+MODIFY COLUMN session_id VARCHAR(36);
