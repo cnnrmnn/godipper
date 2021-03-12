@@ -6,9 +6,9 @@ import (
 )
 
 type TripleDipper struct {
-	ID     int     `json:"id"`
-	UserID int     `json:"userId"`
-	Items  []*Item `json:"items"`
+	ID      int     `json:"id"`
+	OrderID int     `json:"orderId"`
+	Items   []*Item `json:"items"`
 }
 
 type tripleDipperService struct {
@@ -19,8 +19,8 @@ type tripleDipperService struct {
 
 func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
 	td := TripleDipper{ID: id}
-	q := "SELECT user_id FROM triple_dipper where triple_dipper_id = ?"
-	err := tds.db.QueryRow(q, id).Scan(&td.UserID)
+	q := "SELECT order_id FROM triple_dipper where triple_dipper_id = ?"
+	err := tds.db.QueryRow(q, id).Scan(&td.OrderID)
 	if err != nil {
 		return nil, fmt.Errorf("finding triple dipper by ID: %v", err)
 	}
@@ -36,13 +36,13 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 	if err != nil {
 		return fmt.Errorf("starting triple dipper transaction: %v", err)
 	}
-	q := "INSERT INTO triple_dipper (user_id) VALUES (?)"
+	q := "INSERT INTO triple_dipper (order_id) VALUES (?)"
 	stmt, err := tx.Prepare(q)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("preparing triple dipper insertion query: %v", err)
 	}
-	res, err := stmt.Exec(td.UserID)
+	res, err := stmt.Exec(td.OrderID)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("executing triple dipper insertion query: %v", err)
