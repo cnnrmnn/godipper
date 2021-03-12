@@ -16,12 +16,11 @@ func schema(svc *service) (graphql.Schema, error) {
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},
 	)
 	mutationFields := graphql.Fields{
-		"sendCode":       sendCode(svc),
-		"signUp":         signUp(svc),
-		"logIn":          logIn(svc),
-		"logOut":         logOut(svc),
-		"createAddress":  createAddress(svc),
-		"destroyAddress": destroyAddress(svc),
+		"sendCode":      sendCode(svc),
+		"signUp":        signUp(svc),
+		"logIn":         logIn(svc),
+		"logOut":        logOut(svc),
+		"createAddress": createAddress(svc),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},

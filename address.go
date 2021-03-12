@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
@@ -102,28 +101,6 @@ func (as addressService) create(a *Address, ctx context.Context) error {
 	return nil
 }
 
-// destroy destroys an address given its ID provided that it belongs to the
-// current user.
-func (as addressService) destroy(id int, ctx context.Context) (*Address, error) {
-	uid, err := as.us.idFromSession(ctx)
-	if err != nil {
-		return nil, err
-	}
-	a, err := as.findByID(id)
-	if err != nil {
-		return nil, errors.New("failed to find address")
-	}
-	if a.UserID != uid {
-		return nil, errors.New("address doesn't belong to user")
-	}
-	q := `DELETE FROM addresses WHERE address_id = ?`
-	_, err = as.db.Exec(q, id)
-	if err != nil {
-		return nil, fmt.Errorf("destroying address by ID: %v", err)
-	}
-	return a, nil
-}
-
 // addressType is the GraphQL type for Address.
 var addressType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -216,28 +193,6 @@ func createAddress(svc *service) *graphql.Field {
 			err := svc.address.create(a, p.Context)
 			if err != nil {
 				return nil, err
-			}
-			return a, nil
-		},
-	}
-}
-
-// destroyAddress returns a GraphQL mutation field that destroys the address
-// with the given ID provided that it belongs to the current user and resolves
-// to that address if successful.
-func destroyAddress(svc *service) *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.NewNonNull(addressType),
-		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.Int),
-			},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			id := p.Args["id"].(int)
-			a, err := svc.address.destroy(id, p.Context)
-			if err != nil {
-				return false, err
 			}
 			return a, nil
 		},

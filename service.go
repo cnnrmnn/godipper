@@ -22,7 +22,6 @@ type address interface {
 	findByID(id int) (*Address, error)
 	findByUser(ctx context.Context) ([]*Address, error)
 	create(a *Address, ctx context.Context) error
-	destroy(id int, ctx context.Context) (*Address, error)
 }
 
 type extra interface {
