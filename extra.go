@@ -19,7 +19,7 @@ type extraService struct {
 func (es extraService) findByItem(iid int) ([]*Extra, error) {
 	q := `
 		SELECT e.extra_id, e.item_id, e.extra_value_id, ev.extra_value
-		FROM extra e INNER JOIN extra_value ev
+		FROM extras e INNER JOIN extra_values ev
 		ON e.extra_value_id = ev.extra_value_id
 		WHERE e.item_id = ?`
 	rows, err := es.db.Query(q, iid)
@@ -44,7 +44,7 @@ func (es extraService) findByItem(iid int) ([]*Extra, error) {
 }
 
 func (es extraService) create(e *Extra, tx *sql.Tx) error {
-	q := "INSERT INTO extra (item_id, extra_value_id) VALUES (?, ?)"
+	q := "INSERT INTO extras (item_id, extra_value_id) VALUES (?, ?)"
 	stmt, err := tx.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing extra insertion query: %v", err)

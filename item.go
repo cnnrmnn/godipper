@@ -21,7 +21,7 @@ type itemService struct {
 func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 	q := `
 		SELECT i.item_id, i.triple_dipper_id, i.item_value_id, iv.item_value
-		FROM item i INNER JOIN item_value iv
+		FROM items i INNER JOIN item_values iv
 		ON i.item_value_id = iv.item_value_id
 		WHERE i.triple_dipper_id = ?`
 	rows, err := is.db.Query(q, tdid)
@@ -51,7 +51,7 @@ func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 }
 
 func (is itemService) create(it *Item, tx *sql.Tx) error {
-	q := "INSERT INTO item (triple_dipper_id, item_value_id) VALUES(?, ?)"
+	q := "INSERT INTO items (triple_dipper_id, item_value_id) VALUES(?, ?)"
 	stmt, err := tx.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing item insertion query: %v", err)

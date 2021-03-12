@@ -33,7 +33,7 @@ func (us userService) findByID(id int) (*User, error) {
 	var u User
 	q := `
 		SELECT user_id, first_name, last_name, phone, email
-		FROM user
+		FROM users
 		WHERE user_id = ?`
 	err := us.db.QueryRow(q, id).
 		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
@@ -49,7 +49,7 @@ func (us userService) findByPhone(phone string) (*User, error) {
 	var u User
 	q := `
 		SELECT user_id, first_name, last_name, phone, email
-		FROM user
+		FROM users
 		WHERE phone = ?`
 	err := us.db.QueryRow(q, phone).
 		Scan(&u.ID, &u.FirstName, &u.LastName, &u.Phone, &u.Email)
@@ -83,7 +83,7 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 	if !ok {
 		return errors.New("verification code is invalid")
 	}
-	q := `INSERT INTO user (first_name, last_name, phone, email)
+	q := `INSERT INTO users (first_name, last_name, phone, email)
 				VALUES (?, ?, ?, ?)`
 	stmt, err := us.db.Prepare(q)
 	if err != nil {

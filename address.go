@@ -33,7 +33,7 @@ type addressService struct {
 func (as addressService) findByID(id int) (*Address, error) {
 	q := `
 		SELECT address_id, user_id, street, unit, city, state, zip, notes
-		FROM address
+		FROM addresses
 		WHERE address_id = ?`
 	var a Address
 	err := as.db.QueryRow(q, id).
@@ -52,7 +52,7 @@ func (as addressService) findByUser(ctx context.Context) ([]*Address, error) {
 	}
 	q := `
 		SELECT address_id, user_id, street, unit, city, state, zip, notes
-		FROM address
+		FROM addresses
 		WHERE user_id = ?`
 	rows, err := as.db.Query(q, uid)
 	if err != nil {
@@ -83,7 +83,7 @@ func (as addressService) create(a *Address, ctx context.Context) error {
 	}
 	a.UserID = uid
 	q := `
-		INSERT INTO address (user_id, street, unit, city, state, zip, notes)
+		INSERT INTO addresses (user_id, street, unit, city, state, zip, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`
 	stmt, err := as.db.Prepare(q)
 	if err != nil {
@@ -116,7 +116,7 @@ func (as addressService) destroy(id int, ctx context.Context) (*Address, error) 
 	if a.UserID != uid {
 		return nil, errors.New("address doesn't belong to user")
 	}
-	q := `DELETE FROM address WHERE address_id = ?`
+	q := `DELETE FROM addresses WHERE address_id = ?`
 	_, err = as.db.Exec(q, id)
 	if err != nil {
 		return nil, fmt.Errorf("destroying address by ID: %v", err)
