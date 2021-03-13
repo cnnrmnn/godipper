@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// An Item is one of the three choices in a triple dipper.
 type Item struct {
 	ID             int      `json:"id"`
 	TripleDipperID int      `json:"tripleDipperId"`
@@ -13,11 +14,14 @@ type Item struct {
 	Extras         []*Extra `json:"extras"`
 }
 
+// itemService implements the item interface. Its methods manage items.
 type itemService struct {
 	db *sql.DB
 	es extra
 }
 
+// findByTripleDipper returns a slice of items that belong to the triple dipper
+// with the given ID.
 func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 	q := `
 		SELECT i.item_id, i.triple_dipper_id, i.item_value_id, iv.item_value
@@ -50,6 +54,7 @@ func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
 	return its, nil
 }
 
+// create creates the given item in the given transaction.
 func (is itemService) create(it *Item, tx *sql.Tx) error {
 	q := "INSERT INTO items (triple_dipper_id, item_value_id) VALUES(?, ?)"
 	stmt, err := tx.Prepare(q)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+// An Order is an order of triple dippers.
 type Order struct {
 	ID           int     `json:"id"`
 	UserID       int     `json:"userId"`
@@ -20,11 +21,13 @@ type Order struct {
 	DeliveryTime string  `json:"deliveryTime"`
 }
 
+// orderService implements the order interface. Its methods manage orders.
 type orderService struct {
 	db *sql.DB
 	us userService
 }
 
+// findByUser retuirns a slice of orders associated with the current user.
 func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	uid, err := os.us.idFromSession(ctx)
 	if err != nil {
@@ -66,6 +69,7 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	return orders, nil
 }
 
+// create creates an order.
 func (os orderService) create(o *Order) error {
 	q := "INSERT INTO orders (user_id) VALUES (?)"
 	stmt, err := os.db.Prepare(q)
@@ -85,6 +89,8 @@ func (os orderService) create(o *Order) error {
 	return nil
 }
 
+// currentID return the ID of the current user's current order. If the current
+// user has no current order, it creates an order.
 func (os orderService) currentID(ctx context.Context) (int, error) {
 	var id int
 	uid, err := os.us.idFromSession(ctx)
@@ -111,10 +117,13 @@ func (os orderService) currentID(ctx context.Context) (int, error) {
 	return id, nil
 }
 
-func (os orderService) checkOut(id int) (*Order, error) {
+// checkOut gets information for the current user's current order from Chili's
+// and returns the order with the information.
+func (os orderService) checkOut(ctx context.Context) (*Order, error) {
 	return nil, nil
 }
 
-func (os orderService) place(id int) (*Order, error) {
+// place places and returns the current user's current order.
+func (os orderService) place(ctx context.Context) (*Order, error) {
 	return nil, nil
 }

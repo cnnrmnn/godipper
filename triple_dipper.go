@@ -6,12 +6,15 @@ import (
 	"fmt"
 )
 
+// A TripleDipper is a Chili's Triple Dipper.
 type TripleDipper struct {
 	ID      int     `json:"id"`
 	OrderID int     `json:"orderId"`
 	Items   []*Item `json:"items"`
 }
 
+// tripleDipperService implements the tripleDipper interface. Its methods
+// manage triple dippers.
 type tripleDipperService struct {
 	db *sql.DB
 	us user
@@ -19,6 +22,8 @@ type tripleDipperService struct {
 	os order
 }
 
+// findByID returns the triple dipper with the given ID or an error if no
+// triple dipper has the given ID.
 func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
 	td := TripleDipper{ID: id}
 	q := "SELECT order_id FROM triple_dippers where triple_dipper_id = ?"
@@ -33,6 +38,7 @@ func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
 	return &td, nil
 }
 
+// create creates a triple dipper.
 func (tds tripleDipperService) create(td *TripleDipper) error {
 	tx, err := tds.db.Begin()
 	if err != nil {
@@ -69,6 +75,8 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 	return nil
 }
 
+// cart creates a triple dipper that belongs to the current user's current
+// order.
 func (tds tripleDipperService) cart(td *TripleDipper, ctx context.Context) error {
 	oid, err := tds.os.currentID(ctx)
 	if err != nil {

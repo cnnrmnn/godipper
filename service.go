@@ -24,28 +24,33 @@ type address interface {
 	create(a *Address, ctx context.Context) error
 }
 
+// extra defines the methods that should be implemented by the extra service.
 type extra interface {
 	findByItem(iid int) ([]*Extra, error)
 	create(e *Extra, tx *sql.Tx) error
 }
 
+// item defines the methods that should be implemented by the item service.
 type item interface {
 	findByTripleDipper(tdid int) ([]*Item, error)
 	create(it *Item, tx *sql.Tx) error
 }
 
+// tripleDipper defines the methods that should be implemented by the
+// tripleDipper service.
 type tripleDipper interface {
 	findByID(id int) (*TripleDipper, error)
 	create(td *TripleDipper) error
 	cart(td *TripleDipper, ctx context.Context) error
 }
 
+// order defines the methods that should be implemented by the order service.
 type order interface {
 	findByUser(ctx context.Context) ([]*Order, error)
 	currentID(ctx context.Context) (int, error)
 	create(o *Order) error
-	checkOut(id int) (*Order, error)
-	place(id int) (*Order, error)
+	checkOut(ctx context.Context) (*Order, error)
+	place(ctx context.Context) (*Order, error)
 }
 
 // service defines interface types for services used by GraphQL resolvers

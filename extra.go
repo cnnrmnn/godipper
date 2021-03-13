@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// An Extra is an option that accompanies a triple dipper item.
 type Extra struct {
 	ID      int    `json:"id"`
 	ItemID  int    `json:"itemId"`
@@ -12,10 +13,13 @@ type Extra struct {
 	Value   string `json:"value"`
 }
 
+// extraService implements the extra interface. Its methods manage extras.
 type extraService struct {
 	db *sql.DB
 }
 
+// findByItem returns a slice of extras that belong to the item with the given
+// ID.
 func (es extraService) findByItem(iid int) ([]*Extra, error) {
 	q := `
 		SELECT e.extra_id, e.item_id, e.extra_value_id, ev.extra_value
@@ -43,6 +47,7 @@ func (es extraService) findByItem(iid int) ([]*Extra, error) {
 	return exts, nil
 }
 
+// create creates the given extra in the given transaction.
 func (es extraService) create(e *Extra, tx *sql.Tx) error {
 	q := "INSERT INTO extras (item_id, extra_value_id) VALUES (?, ?)"
 	stmt, err := tx.Prepare(q)
