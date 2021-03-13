@@ -7,17 +7,15 @@ import (
 	"fmt"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/cnnrmnn/godipper/chilis"
 	"github.com/graphql-go/graphql"
 )
 
 // A User is composed of all of the information associated with a user of the
 // application.
 type User struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
+	ID int `json:"id"`
+	chilis.Customer
 }
 
 // userService implements the users interface. Its methods manage users and
@@ -214,10 +212,12 @@ func signUp(svc *service) *graphql.Field {
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			u := &User{
-				FirstName: p.Args["firstName"].(string),
-				LastName:  p.Args["lastName"].(string),
-				Phone:     p.Args["phone"].(string),
-				Email:     p.Args["email"].(string),
+				Customer: chilis.Customer{
+					FirstName: p.Args["firstName"].(string),
+					LastName:  p.Args["lastName"].(string),
+					Phone:     p.Args["phone"].(string),
+					Email:     p.Args["email"].(string),
+				},
 			}
 			err := svc.user.signUp(u, p.Args["code"].(string), p.Context)
 			if err != nil {

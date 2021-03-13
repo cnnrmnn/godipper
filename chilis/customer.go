@@ -14,11 +14,11 @@ import (
 // (like all of the other types in the package) so that developers are free to
 // define their own concrete types for users/customers that may contain more
 // information than this package needs.
-type Customer interface {
-	FirstName() string
-	LastName() string
-	Phone() string
-	Email() string
+type Customer struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
 }
 
 type OrderInfo struct {
@@ -46,10 +46,10 @@ func checkoutForm(doc *html.Node, c Customer, addr, unit, notes string) (url.Val
 	form.Add("deliveryAddress", addr)
 	form.Add("deliveryAddress2", unit)
 	form.Add("deliveryAddlNotes", notes)
-	form.Add("firstName", c.FirstName())
-	form.Add("lastName", c.LastName())
-	form.Add("contactPhone", c.Phone())
-	form.Add("email", c.Email())
+	form.Add("firstName", c.FirstName)
+	form.Add("lastName", c.LastName)
+	form.Add("contactPhone", c.Phone)
+	form.Add("email", c.Email)
 	date, time, err := parseASAP(doc)
 	if err != nil {
 		return nil, fmt.Errorf("creating checkout form: %w", err)
@@ -75,10 +75,10 @@ func checkoutForm(doc *html.Node, c Customer, addr, unit, notes string) (url.Val
 // validCustomer returns an error if any of the customer's methods return
 // invalid values.
 func validCustomer(c Customer) error {
-	if err := validPhone(c.Phone()); err != nil {
+	if err := validPhone(c.Phone); err != nil {
 		return err
 	}
-	if err := validEmail(c.Email()); err != nil {
+	if err := validEmail(c.Email); err != nil {
 		return err
 	}
 	return nil
