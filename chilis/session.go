@@ -55,7 +55,7 @@ func StartSession() (*Session, error) {
 }
 
 // SetLocation sets the Chili's location for the Session.
-func (s *Session) SetLocation(addr string) error {
+func (s *Session) SetLocation(addr Address) error {
 	clt := s.Client
 	id, err := nearestLocationID(clt, addr)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *Session) SetLocation(addr string) error {
 
 // nearestLocationID returns the ID of the nearest location that is in proximity
 // of the given address.
-func nearestLocationID(clt *http.Client, addr string) (string, error) {
+func nearestLocationID(clt *http.Client, addr Address) (string, error) {
 	var id string
 
 	u, err := url.Parse("https://www.chilis.com/locations/results")
@@ -82,7 +82,7 @@ func nearestLocationID(clt *http.Client, addr string) (string, error) {
 		return id, fmt.Errorf("parsing location URL: %v", err)
 	}
 	query := url.Values{
-		"query": []string{addr},
+		"query": []string{addr.String()},
 	}
 	u.RawQuery = query.Encode()
 
@@ -128,7 +128,7 @@ func (s *Session) Cart(td TripleDipper) error {
 
 // Checkout submits the given Customer's information to the Session and returns
 // an OrderInfo struct.
-func (s *Session) Checkout(c Customer, addr, unit, notes string) (OrderInfo, error) {
+func (s *Session) Checkout(c Customer, addr Address) (OrderInfo, error) {
 	var info OrderInfo
 	clt := s.Client
 	if err := validCustomer(c); err != nil {
@@ -141,7 +141,7 @@ func (s *Session) Checkout(c Customer, addr, unit, notes string) (OrderInfo, err
 		return info, fmt.Errorf("fetching delivery information: %v", err)
 	}
 
-	form, err := checkoutForm(doc, c, addr, unit, notes)
+	form, err := checkoutForm(doc, c, addr)
 	if err != nil {
 		return info, fmt.Errorf("building checkout request: %w", err)
 	}
@@ -166,13 +166,13 @@ func (s *Session) Checkout(c Customer, addr, unit, notes string) (OrderInfo, err
 
 // deliveryTime returns an estimated delivery time or an error if the Customer's
 // address is out of range.
-func (s *Session) deliveryTime(addr, csrf string) (string, error) {
+func (s *Session) deliveryTime(addr Address, csrf string) (string, error) {
 	var time string
 	clt := s.Client
 	u := "https://www.chilis.com/order/delivery/estimate"
 	form := url.Values{}
 	form.Add("_csrf", csrf)
-	form.Add("deliveryAddress", addr)
+	form.Add("deliveryAddress", addr.String())
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
 		return time, fmt.Errorf("fetching delivery estimate: %v", err)

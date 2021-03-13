@@ -5,25 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/cnnrmnn/godipper/chilis"
 	"github.com/graphql-go/graphql"
 )
 
 // An Address is a United States address that can receive food deliveries.
 type Address struct {
-	ID     int    `json:"id"`
-	UserID int    `json:"userId"`
-	Street string `json:"street"`
-	Unit   string `json:"unit"`
-	City   string `json:"city"`
-	State  string `json:"state"`
-	Zip    string `json:"zip"`
-	Notes  string `json:"notes"`
-}
-
-// String retrns a string representation of an address that is formatted for
-// Chili's delivery endpoints.
-func (a Address) String() string {
-	return fmt.Sprintf("%s,%s,%s,USA", a.Street, a.City, a.State)
+	ID     int `json:"id"`
+	UserID int `json:"userId"`
+	chilis.Address
 }
 
 // addressService implements the address interface. Its methods manage
@@ -182,10 +172,12 @@ func createAddress(svc *service) *graphql.Field {
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			a := &Address{
-				Street: p.Args["street"].(string),
-				City:   p.Args["city"].(string),
-				State:  p.Args["state"].(string),
-				Zip:    p.Args["zip"].(string),
+				Address: chilis.Address{
+					Street: p.Args["street"].(string),
+					City:   p.Args["city"].(string),
+					State:  p.Args["state"].(string),
+					Zip:    p.Args["zip"].(string),
+				},
 			}
 			unit, ok := p.Args["unit"].(string)
 			if ok {

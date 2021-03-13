@@ -31,7 +31,7 @@ type OrderInfo struct {
 
 // checkoutForm adds all of the customer's information to a form map with the default
 // values for every checkout request.
-func checkoutForm(doc *html.Node, c Customer, addr, unit, notes string) (url.Values, error) {
+func checkoutForm(doc *html.Node, c Customer, addr Address) (url.Values, error) {
 	form := url.Values{}
 	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
 	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
@@ -43,9 +43,9 @@ func checkoutForm(doc *html.Node, c Customer, addr, unit, notes string) (url.Val
 	form.Add("payment", "online")
 	form.Add("silverwareOptIn", "true")
 	form.Add("smsOptIn", "true")
-	form.Add("deliveryAddress", addr)
-	form.Add("deliveryAddress2", unit)
-	form.Add("deliveryAddlNotes", notes)
+	form.Add("deliveryAddress", addr.String())
+	form.Add("deliveryAddress2", addr.Unit)
+	form.Add("deliveryAddlNotes", addr.Notes)
 	form.Add("firstName", c.FirstName)
 	form.Add("lastName", c.LastName)
 	form.Add("contactPhone", c.Phone)
