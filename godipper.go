@@ -25,12 +25,14 @@ func main() {
 	es := extraService{db: db}
 	is := itemService{db: db, es: es}
 	tds := tripleDipperService{db: db, is: is}
+	os := orderService{db: db}
 	svc := &service{
 		user:         us,
 		address:      as,
 		extra:        es,
 		item:         is,
 		tripleDipper: tds,
+		order:        os,
 	}
 
 	schema, err := schema(svc)

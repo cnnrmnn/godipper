@@ -39,6 +39,14 @@ type tripleDipper interface {
 	create(td *TripleDipper) error
 }
 
+type order interface {
+	findByUser(ctx context.Context) ([]*Order, error)
+	currentID(ctx context.Context) (int, error)
+	create(o *Order) error
+	checkOut(id int) (*Order, error)
+	place(id int) (*Order, error)
+}
+
 // service defines interface types for services used by GraphQL resolvers
 // throughout the application.
 type service struct {
@@ -47,4 +55,5 @@ type service struct {
 	extra
 	item
 	tripleDipper
+	order
 }
