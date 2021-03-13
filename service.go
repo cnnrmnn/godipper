@@ -37,6 +37,7 @@ type item interface {
 type tripleDipper interface {
 	findByID(id int) (*TripleDipper, error)
 	create(td *TripleDipper) error
+	cart(td *TripleDipper, ctx context.Context) error
 }
 
 type order interface {

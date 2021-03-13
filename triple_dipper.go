@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 )
@@ -15,6 +16,7 @@ type tripleDipperService struct {
 	db *sql.DB
 	us user
 	is item
+	os order
 }
 
 func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
@@ -65,4 +67,13 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 		return fmt.Errorf("commiting triple dipper transaction: %v", err)
 	}
 	return nil
+}
+
+func (tds tripleDipperService) cart(td *TripleDipper, ctx context.Context) error {
+	oid, err := tds.os.currentID(ctx)
+	if err != nil {
+		return err
+	}
+	td.OrderID = oid
+	return tds.create(td)
 }
