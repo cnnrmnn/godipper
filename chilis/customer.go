@@ -15,7 +15,6 @@ import (
 // define their own concrete types for users/customers that may contain more
 // information than this package needs.
 type Customer interface {
-	Address() Address
 	FirstName() string
 	LastName() string
 	Phone() string
@@ -32,7 +31,7 @@ type OrderInfo struct {
 
 // checkoutForm adds all of the customer's information to a form map with the default
 // values for every checkout request.
-func checkoutForm(doc *html.Node, c Customer) (url.Values, error) {
+func checkoutForm(doc *html.Node, c Customer, addr, unit, notes string) (url.Values, error) {
 	form := url.Values{}
 	form.Add("inAuthData.siteKey", "48693e4afc6b92d9")
 	form.Add("inAuthData.collectorURL", "www.cdn-net.com")
@@ -44,13 +43,13 @@ func checkoutForm(doc *html.Node, c Customer) (url.Values, error) {
 	form.Add("payment", "online")
 	form.Add("silverwareOptIn", "true")
 	form.Add("smsOptIn", "true")
-	form.Add("deliveryAddress", c.Address().chilis())
-	form.Add("deliveryAddress2", c.Address().Unit)
+	form.Add("deliveryAddress", addr)
+	form.Add("deliveryAddress2", unit)
+	form.Add("deliveryAddlNotes", notes)
 	form.Add("firstName", c.FirstName())
 	form.Add("lastName", c.LastName())
 	form.Add("contactPhone", c.Phone())
 	form.Add("email", c.Email())
-	form.Add("deliveryAddlNotes", c.Address().Notes)
 	date, time, err := parseASAP(doc)
 	if err != nil {
 		return nil, fmt.Errorf("creating checkout form: %w", err)

@@ -20,6 +20,12 @@ type Address struct {
 	Notes  string `json:"notes"`
 }
 
+// String retrns a string representation of an address that is formatted for
+// Chili's delivery endpoints.
+func (a Address) String() string {
+	return fmt.Sprintf("%s,%s,%s,USA", a.Street, a.City, a.State)
+}
+
 // addressService implements the address interface. Its methods manage
 // addresses.
 type addressService struct {

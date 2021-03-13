@@ -10,9 +10,8 @@ import (
 
 // A Location is a Chili's restuarant location
 type Location struct {
-	Name    string `json:"name"`
-	Phone   string `json:"phone"`
-	Address `json:"address"`
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
 }
 
 // parseNearestID parses and returns the nearest location's ID, if any, from the
@@ -48,24 +47,17 @@ func parseLocation(doc *html.Node) (Location, error) {
 	if err != nil {
 		return loc, fmt.Errorf("parsing location: %v", err)
 	}
-	// Don't use functions that return errors for nil results after wrapper is
-	// located.
-	fo := htmlquery.FindOne
-	it := htmlquery.InnerText
-	name := it(fo(wrp, classQuery("div", "location-name")))
-	street := it(fo(wrp, classQuery("div", "location-address-street")))
-	city := it(fo(wrp, classQuery("span", "location-address-city")))
-	state := it(fo(wrp, classQuery("span", "location-address-state")))
-	zip := it(fo(wrp, classQuery("span", "location-address-zip")))
-	phone := it(fo(wrp, classQuery("a", "location-phone tel")))
+
+	name, err := innerText(wrp, classQuery("div", "location-name"))
+	if err != nil {
+		return loc, fmt.Errorf("parsing location name: %v", err)
+	}
+	phone, err := innerText(wrp, classQuery("a", "location-phone tel"))
+	if err != nil {
+		return loc, fmt.Errorf("parsing location phone: %v", err)
+	}
 	return Location{
 		Name:  name,
 		Phone: phone,
-		Address: Address{
-			Street: street,
-			City:   city,
-			State:  state,
-			Zip:    zip,
-		},
 	}, nil
 }
