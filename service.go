@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+
+	"github.com/cnnrmnn/godipper/chilis"
 )
 
 // user defines the methods that should be implemented by the user service.
@@ -40,16 +42,18 @@ type item interface {
 // tripleDipper service.
 type tripleDipper interface {
 	findByID(id int) (*TripleDipper, error)
+	findByOrder(oid int) ([]*TripleDipper, error)
 	create(td *TripleDipper) error
-	cart(td *TripleDipper, ctx context.Context) error
 }
 
 // order defines the methods that should be implemented by the order service.
 type order interface {
 	findByUser(ctx context.Context) ([]*Order, error)
-	currentID(ctx context.Context) (int, error)
+	current(ctx context.Context) (*Order, error)
 	create(o *Order) error
-	checkOut(ctx context.Context) (*Order, error)
+	cart(td *TripleDipper, ctx context.Context) error
+	updateOrder(o *Order, info chilis.OrderInfo) error
+	checkOut(ctx context.Context, aid int) (*Order, error)
 	place(ctx context.Context) (*Order, error)
 }
 

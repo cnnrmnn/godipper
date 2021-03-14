@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 
+	"github.com/cnnrmnn/godipper/chilis"
 	"github.com/graphql-go/graphql"
 )
 
@@ -17,8 +17,8 @@ type TripleDipper struct {
 
 // ItemValues returns a slice of the triple dipper's items (that implement the
 // chilis.Item interface).
-func (td TripleDipper) ItemValues() []Item {
-	var items []Item
+func (td TripleDipper) ItemValues() []chilis.Item {
+	var items []chilis.Item
 	for _, it := range td.Items {
 		items = append(items, *it)
 	}
@@ -31,7 +31,6 @@ type tripleDipperService struct {
 	db *sql.DB
 	us user
 	is item
-	os order
 }
 
 // findByID returns the triple dipper with the given ID or an error if no
@@ -48,6 +47,39 @@ func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
 		return nil, fmt.Errorf("finding triple dipper items by ID: %v", err)
 	}
 	return &td, nil
+}
+
+// findByOrder returns a slice of triple dippers that belong to the order with
+// the given ID.
+func (tds tripleDipperService) findByOrder(oid int) ([]*TripleDipper, error) {
+	q := `
+		SELECT triple_dipper_id, order_id
+		FROM triple_dippers
+		WHERE order_id = ?`
+	rows, err := tds.db.Query(q, oid)
+	if err != nil {
+		return nil, fmt.Errorf("finding triple dippers by order ID: %v", err)
+	}
+	defer rows.Close()
+	var tdrs []*TripleDipper
+	for rows.Next() {
+		var td TripleDipper
+		err := rows.Scan(&td.ID, &td.OrderID)
+		if err != nil {
+			return nil, fmt.Errorf("reading triple dipper: %v", err)
+		}
+		items, err := tds.is.findByTripleDipper(td.ID)
+		if err != nil {
+			return nil, fmt.Errorf("finding triple dipper items: %v", err)
+		}
+		td.Items = items
+		tdrs = append(tdrs, &td)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("reading triple dippers: %v", err)
+	}
+	return tdrs, nil
 }
 
 // create creates a triple dipper.
@@ -85,17 +117,6 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 		return fmt.Errorf("commiting triple dipper transaction: %v", err)
 	}
 	return nil
-}
-
-// cart creates a triple dipper that belongs to the current user's current
-// order.
-func (tds tripleDipperService) cart(td *TripleDipper, ctx context.Context) error {
-	oid, err := tds.os.currentID(ctx)
-	if err != nil {
-		return err
-	}
-	td.OrderID = oid
-	return tds.create(td)
 }
 
 // tripleDipperType is the GraphQL type for TripleDipper.
@@ -140,7 +161,7 @@ func addToCart(svc *service) *graphql.Field {
 			td := &TripleDipper{
 				Items: items,
 			}
-			err := svc.tripleDipper.cart(td, p.Context)
+			err := svc.order.cart(td, p.Context)
 			if err != nil {
 				return nil, err
 			}

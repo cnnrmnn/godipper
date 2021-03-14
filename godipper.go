@@ -24,8 +24,8 @@ func main() {
 	as := addressService{db: db, us: us}
 	es := extraService{db: db}
 	is := itemService{db: db, es: es}
-	os := orderService{db: db, us: us}
-	tds := tripleDipperService{db: db, is: is, os: os}
+	tds := tripleDipperService{db: db, is: is}
+	os := orderService{db: db, as: as, tds: tds, us: us}
 	svc := &service{
 		user:         us,
 		address:      as,
