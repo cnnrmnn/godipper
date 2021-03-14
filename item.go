@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/graphql-go/graphql"
 )
 
 // An Item is one of the three choices in a triple dipper.
@@ -92,3 +94,42 @@ func (is itemService) create(it *Item, tx *sql.Tx) error {
 	}
 	return nil
 }
+
+// itemType is the GraphQL type for Item.
+var itemType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Item",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"tripleDipperId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"valueId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"value": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"extras": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(extraType))),
+			},
+		},
+	},
+)
+
+// itemInputType is the GraphQL input type for Item.
+var itemInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "ItemInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"valueId": &graphql.InputObjectFieldConfig{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"extras": &graphql.InputObjectFieldConfig{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.Int))),
+			},
+		},
+	},
+)

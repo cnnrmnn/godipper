@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/graphql-go/graphql"
 )
 
 // A TripleDipper is a Chili's Triple Dipper.
@@ -94,4 +96,55 @@ func (tds tripleDipperService) cart(td *TripleDipper, ctx context.Context) error
 	}
 	td.OrderID = oid
 	return tds.create(td)
+}
+
+// tripleDipperType is the GraphQL type for TripleDipper.
+var tripleDipperType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "TripleDipper",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"orderId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"items": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(itemType))),
+			},
+		},
+	},
+)
+
+func addToCart(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(tripleDipperType),
+		Args: graphql.FieldConfigArgument{
+			"items": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(itemInputType))),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			var items []*Item
+			for _, item := range p.Args["items"].([]interface{}) {
+				iin := item.(map[string]interface{})
+				ivid := iin["valueId"].(int)
+				var extras []*Extra
+				for _, ein := range iin["extras"].([]interface{}) {
+					evid := ein.(int)
+					extras = append(extras, &Extra{ValueID: evid})
+				}
+				items = append(items, &Item{ValueID: ivid, Extras: extras})
+			}
+
+			td := &TripleDipper{
+				Items: items,
+			}
+			err := svc.tripleDipper.cart(td, p.Context)
+			if err != nil {
+				return nil, err
+			}
+			return td, nil
+		},
+	}
 }

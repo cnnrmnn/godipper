@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/graphql-go/graphql"
 )
 
 // An Extra is an option that accompanies a triple dipper item.
@@ -65,3 +67,24 @@ func (es extraService) create(e *Extra, tx *sql.Tx) error {
 	e.ID = int(id)
 	return nil
 }
+
+// extraType is the GraphQL type for Extra.
+var extraType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Extra",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"itemId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"valueId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"value": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	},
+)
