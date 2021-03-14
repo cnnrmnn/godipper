@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -166,8 +167,8 @@ func (s *Session) Checkout(c Customer, addr Address) (OrderInfo, error) {
 
 // deliveryTime returns an estimated delivery time or an error if the Customer's
 // address is out of range.
-func (s *Session) deliveryTime(addr Address, csrf string) (string, error) {
-	var time string
+func (s *Session) deliveryTime(addr Address, csrf string) (time.Time, error) {
+	var t time.Time
 	clt := s.Client
 	u := "https://www.chilis.com/order/delivery/estimate"
 	form := url.Values{}
@@ -175,12 +176,12 @@ func (s *Session) deliveryTime(addr Address, csrf string) (string, error) {
 	form.Add("deliveryAddress", addr.String())
 	resp, err := clt.PostForm(u, form)
 	if err != nil {
-		return time, fmt.Errorf("fetching delivery estimate: %v", err)
+		return t, fmt.Errorf("fetching delivery estimate: %v", err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return time, fmt.Errorf("reading delivery estimate response: %v", err)
+		return t, fmt.Errorf("reading delivery estimate response: %v", err)
 	}
 
 	return parseEstimate(body)

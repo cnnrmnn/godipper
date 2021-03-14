@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/antchfx/htmlquery"
 	"golang.org/x/net/html"
@@ -22,11 +23,11 @@ type Customer struct {
 }
 
 type OrderInfo struct {
-	Subtotal      string `json:"subtotal"`
-	Tax           string `json:"tax"`
-	DeliveryFee   string `json:"deliveryFee"`
-	ServiceCharge string `json:"serviceCharge"`
-	DeliveryTime  string `json:"deliveryTime"`
+	Subtotal      string    `json:"subtotal"`
+	Tax           string    `json:"tax"`
+	DeliveryFee   string    `json:"deliveryFee"`
+	ServiceCharge string    `json:"serviceCharge"`
+	DeliveryTime  time.Time `json:"deliveryTime"`
 }
 
 // checkoutForm adds all of the customer's information to a form map with the default
@@ -172,16 +173,20 @@ func parseTransactionID(doc *html.Node) (string, error) {
 	return tid, nil
 }
 
-func parseEstimate(body []byte) (string, error) {
-	var time string
+func parseEstimate(body []byte) (time.Time, error) {
+	var t time.Time
 	var decoded interface{}
 	err := json.Unmarshal(body, &decoded)
 	if err != nil {
-		return time, fmt.Errorf("parsing delivery estimate body: %v", err)
+		return t, fmt.Errorf("parsing delivery estimate body: %v", err)
 	}
-	time, ok := decoded.(map[string]interface{})["delivery_time"].(string)
+	tstr, ok := decoded.(map[string]interface{})["delivery_time"].(string)
 	if !ok {
-		return time, ForbiddenError{"address is out of range"}
+		return t, ForbiddenError{"address is out of range"}
 	}
-	return time, nil
+	t, err = time.Parse(time.RFC3339, tstr)
+	if err != nil {
+		return t, fmt.Errorf("parsing delivery time: %v", err)
+	}
+	return t, nil
 }

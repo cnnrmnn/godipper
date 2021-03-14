@@ -47,7 +47,8 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 			COALESCE(tax, 0),
 			COALESCE(delivery_fee, 0),
 			COALESCE(service_fee, 0),
-			COALESCE(delivery_time, '')
+			COALESCE(delivery_time,
+				STR_TO_DATE('1970-01-01 00:00:01', '%Y-%m-%d %H:%i:%s'))
 		FROM orders
 		WHERE user_id = ?`
 	rows, err := os.db.Query(q, uid)
