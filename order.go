@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cnnrmnn/godipper/chilis"
+	"github.com/graphql-go/graphql"
 )
 
 // An Order is an order of triple dippers.
@@ -98,10 +99,10 @@ func (os orderService) create(o *Order) error {
 // current return the current user's current order. If the current user has no
 // current order, it creates an order and returns it.
 func (os orderService) current(ctx context.Context) (*Order, error) {
-	var o *Order
+	var o Order
 	uid, err := os.us.idFromSession(ctx)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	q := `
 		SELECT
@@ -112,9 +113,10 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 			COALESCE(tax, 0),
 			COALESCE(delivery_fee, 0),
 			COALESCE(service_fee, 0),
-			COALESCE(delivery_time, '')
+			COALESCE(delivery_time,
+				STR_TO_DATE('1970-01-01 00:00:01', '%Y-%m-%d %H:%i:%s'))
 		FROM orders
-		WHERE completed = FALSE AND order_id = ?
+		WHERE completed = FALSE AND user_id = ?
 		ORDER BY created_at DESC`
 	err = os.db.QueryRow(q, uid).
 		Scan(&o.ID, &o.UserID, &o.Completed, &o.AddressID, &o.SessionID,
@@ -122,16 +124,16 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 			&o.DeliveryTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			o = &Order{UserID: uid}
-			e := os.create(o)
+			no := &Order{UserID: uid}
+			e := os.create(no)
 			if e != nil {
-				return o, fmt.Errorf("getting current order: %v", e)
+				return nil, fmt.Errorf("getting current order: %v", e)
 			}
-			return o, nil
+			return no, nil
 		}
-		return o, fmt.Errorf("finding current order: %v", err)
+		return nil, fmt.Errorf("finding current order: %v", err)
 	}
-	return o, nil
+	return &o, nil
 }
 
 // cart creates a triple dipper that belongs to the current user's current
@@ -146,9 +148,15 @@ func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
 }
 
 func (os orderService) updateOrder(o *Order, info chilis.OrderInfo) error {
+	o.Subtotal = info.Subtotal
+	o.Tax = info.Tax
+	o.DeliveryFee = info.DeliveryFee
+	o.ServiceFee = info.ServiceFee
+	o.DeliveryTime = info.DeliveryTime
 	q := `
 		UPDATE orders
 		SET
+			address_id = ?,
 			session_id = ?,
 			subtotal = ?,
 			tax = ?,
@@ -160,8 +168,8 @@ func (os orderService) updateOrder(o *Order, info chilis.OrderInfo) error {
 	if err != nil {
 		return fmt.Errorf("preparing order update query: %v", err)
 	}
-	_, err = stmt.Exec(o.SessionID, o.Subtotal, o.Tax, o.DeliveryFee,
-		o.ServiceFee, o.DeliveryTime)
+	_, err = stmt.Exec(o.AddressID, o.SessionID, o.Subtotal, o.Tax,
+		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.ID)
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
 	}
@@ -175,6 +183,14 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return o, err
 	}
+	tdrs, err := os.tds.findByOrder(o.ID)
+	if err != nil {
+		return o, err
+	}
+	if len(tdrs) == 0 {
+		return o, errors.New("cart is empty")
+	}
+
 	sess, err := chilis.StartSession()
 	if err != nil {
 		return o, err
@@ -187,19 +203,14 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return o, err
 	}
-	tdrs, err := os.tds.findByOrder(o.ID)
-	if err != nil {
-		return o, err
-	}
-	if len(tdrs) == 0 {
-		return o, errors.New("cart is empty")
-	}
+
 	for _, td := range tdrs {
 		err = sess.Cart(td)
 		if err != nil {
 			return o, err
 		}
 	}
+
 	u, err := os.us.me(ctx)
 	if err != nil {
 		return o, err
@@ -208,15 +219,71 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return o, err
 	}
+	o.AddressID = aid
+	o.SessionID = sess.ID
 	err = os.updateOrder(o, info)
 	if err != nil {
 		return o, err
 	}
-	o.SessionID = sess.ID
 	return o, nil
 }
 
 // place places and returns the current user's current order.
 func (os orderService) place(ctx context.Context) (*Order, error) {
 	return nil, nil
+}
+
+// orderType is the GraphQL type for Order.
+var orderType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Order",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"userId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"addressId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"sessionId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"completed": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+			},
+			"subtotal": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Float),
+			},
+			"tax": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Float),
+			},
+			"deliveryFee": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Float),
+			},
+			"serviceFee": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Float),
+			},
+			"deliveryTime": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	},
+)
+
+// checkOut returns a GraphQL mutation field that populates the current user's
+// current order with information from Chili's given an address ID.
+func checkOut(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(orderType),
+		Args: graphql.FieldConfigArgument{
+			"addressId": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return svc.order.checkOut(p.Context, p.Args["addressId"].(int))
+		},
+	}
 }

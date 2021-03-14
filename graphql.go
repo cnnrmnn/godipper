@@ -22,6 +22,7 @@ func schema(svc *service) (graphql.Schema, error) {
 		"logOut":        logOut(svc),
 		"createAddress": createAddress(svc),
 		"addToCart":     addToCart(svc),
+		"checkOut":      checkOut(svc),
 	}
 	mutationType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Mutation", Fields: mutationFields},

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/antchfx/htmlquery"
@@ -23,11 +24,11 @@ type Customer struct {
 }
 
 type OrderInfo struct {
-	Subtotal      string    `json:"subtotal"`
-	Tax           string    `json:"tax"`
-	DeliveryFee   string    `json:"deliveryFee"`
-	ServiceCharge string    `json:"serviceCharge"`
-	DeliveryTime  time.Time `json:"deliveryTime"`
+	Subtotal     float32
+	Tax          float32
+	DeliveryFee  float32
+	ServiceFee   float32
+	DeliveryTime time.Time
 }
 
 // checkoutForm adds all of the customer's information to a form map with the default
@@ -111,26 +112,41 @@ func validEmail(email string) error {
 	return BadRequestError{"email"}
 }
 
+// parsePrice finds the first HTML element that matches the given XPath query
+// and returns its inner text (starting with $) parsed at a float.
+func parsePrice(node *html.Node, query string) (float32, error) {
+	var f float32
+	elt, err := findOne(node, query)
+	if err != nil {
+		return f, fmt.Errorf("parsing inner text: %v", err)
+	}
+	f64, err := strconv.ParseFloat(htmlquery.InnerText(elt)[1:], 32)
+	if err != nil {
+		return f, fmt.Errorf("parsing inner text as float: %v", err)
+	}
+	return float32(f64), nil
+}
+
 func parseInfo(doc *html.Node) (info OrderInfo, err error) {
-	info.Subtotal, err = innerText(doc, classQuery("div", "cost js-subtotal"))
+	info.Subtotal, err = parsePrice(doc, classQuery("div", "cost js-subtotal"))
 	if err != nil {
 		return info, fmt.Errorf("parsing subtotal: %v", err)
 	}
 	// XPath query
 	q := "//tr[@id='pickup-tax-payment']/td[2]/div[@class='cost']"
-	info.Tax, err = innerText(doc, q)
+	info.Tax, err = parsePrice(doc, q)
 	if err != nil {
 		return info, fmt.Errorf("parsing tax: %v", err)
 	}
 	// XPath query
 	q = "//tr[@id='delivery-fee']/td[2]/div[@class='cost']"
-	info.DeliveryFee, err = innerText(doc, q)
+	info.DeliveryFee, err = parsePrice(doc, q)
 	if err != nil {
 		return info, fmt.Errorf("parsing delivery fee: %v", err)
 	}
 	// XPath query
 	q = "//tr[@id='service-charge']/td[2]/div[@class='cost']"
-	info.ServiceCharge, err = innerText(doc, q)
+	info.ServiceFee, err = parsePrice(doc, q)
 	if err != nil {
 		return info, fmt.Errorf("parsing service charge: %v", err)
 	}
