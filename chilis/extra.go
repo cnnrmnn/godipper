@@ -7,27 +7,8 @@ import (
 	"golang.org/x/net/html"
 )
 
-// extras is a hash table that maps an Extra to its display name
-var extras = map[Extra]string{
-	0: "Ancho-Chile Ranch Dressing",
-	1: "Avocado-Ranch Dressing",
-	2: "Bleu Cheese Dressing",
-	3: "Honey-Mustard Dressing",
-	4: "Original BBQ Sauce",
-	5: "Ranch Dressing",
-}
-
-// An Extra is an optional component of a Dipper, typically used for dipping
-// sauces.
-type Extra byte
-
-// Name returns the Extra's display name.
-func (e Extra) Name() string {
-	return extras[e]
-}
-
 // parseID parses and returns an Extra's Chili's ID given its Item's Chili's ID.
-func (e Extra) parseID(node *html.Node, iid string) (string, error) {
+func parseExtraID(node *html.Node, val, iid string) (string, error) {
 	var eid string
 	// Groups of extras for the given item ID
 	grps, err := find(node, attrQuery("div", "data-related", iid))
@@ -35,7 +16,7 @@ func (e Extra) parseID(node *html.Node, iid string) (string, error) {
 		return eid, fmt.Errorf("parsing Extra's Chili's ID: %v", err)
 	}
 	for _, grp := range grps {
-		eid, err := selectAttr(grp, textQuery("option", e.Name()), "value")
+		eid, err := selectAttr(grp, textQuery("option", val), "value")
 		if err != nil {
 			continue
 		}

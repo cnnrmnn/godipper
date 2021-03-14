@@ -9,13 +9,14 @@ import (
 	"golang.org/x/net/html"
 )
 
-type TripleDipper struct {
-	Dippers [3]Dipper
+// TripleDipper is a Chili's triple dipper.
+type TripleDipper interface {
+	ItemValues() []Item
 }
 
 // form checks if the TripleDipper is permitted and adds all of its components'
 // Chili's IDs and a CSRF token to the given form Values map.
-func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
+func tripleDipperForm(doc *html.Node, td TripleDipper) (url.Values, error) {
 	form := url.Values{}
 	csrf, err := parseCSRFToken(doc)
 	if err != nil {
@@ -23,19 +24,15 @@ func (td TripleDipper) form(doc *html.Node) (url.Values, error) {
 	}
 	form.Add("_csrf", csrf)
 
-	for i, d := range td.Dippers {
-		if !d.permitted() {
-			return nil, BadRequestError{fmt.Sprintf("dipper %d", i+1)}
-		}
-
-		iid, err := d.Item.parseID(doc, i)
+	for i, it := range td.ItemValues() {
+		iid, err := parseItemID(doc, it.String(), i)
 		if err != nil {
 			return nil, fmt.Errorf("adding Item to form: %v", err)
 		}
 		form.Add("selectedIds", iid)
 
-		for _, e := range d.Extras {
-			eid, err := e.parseID(doc, iid)
+		for _, e := range it.ExtraValues() {
+			eid, err := parseExtraID(doc, e, iid)
 			if err != nil {
 				return nil, fmt.Errorf("adding Extra to form: %v", err)
 			}

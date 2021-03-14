@@ -14,6 +14,20 @@ type Item struct {
 	Extras         []*Extra `json:"extras"`
 }
 
+// String returns a string representation of the item.
+func (it Item) String() string {
+	return it.Value
+}
+
+// ExtraValues returns a slice of the item's extras' values.
+func (it Item) ExtraValues() []string {
+	var vals []string
+	for _, e := range it.Extras {
+		vals = append(vals, e.Value)
+	}
+	return vals
+}
+
 // itemService implements the item interface. Its methods manage items.
 type itemService struct {
 	db *sql.DB

@@ -108,7 +108,7 @@ func (s *Session) Cart(td TripleDipper) error {
 		return fmt.Errorf("adding TripleDipper to cart: %v", err)
 	}
 
-	form, err := td.form(doc)
+	form, err := tripleDipperForm(doc, td)
 	if err != nil {
 		return fmt.Errorf("adding TripleDipper to cart: %w", err)
 	}

@@ -13,6 +13,16 @@ type TripleDipper struct {
 	Items   []*Item `json:"items"`
 }
 
+// ItemValues returns a slice of the triple dipper's items (that implement the
+// chilis.Item interface).
+func (td TripleDipper) ItemValues() []Item {
+	var items []Item
+	for _, it := range td.Items {
+		items = append(items, *it)
+	}
+	return items
+}
+
 // tripleDipperService implements the tripleDipper interface. Its methods
 // manage triple dippers.
 type tripleDipperService struct {
