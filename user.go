@@ -159,15 +159,31 @@ var userType = graphql.NewObject(
 			},
 			"firstName": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					u := p.Source.(*User)
+					return u.FirstName, nil
+				},
 			},
 			"lastName": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					u := p.Source.(*User)
+					return u.LastName, nil
+				},
 			},
 			"phone": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					u := p.Source.(*User)
+					return u.Phone, nil
+				},
 			},
 			"email": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					u := p.Source.(*User)
+					return u.Email, nil
+				},
 			},
 		},
 	},

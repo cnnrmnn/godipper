@@ -110,21 +110,45 @@ var addressType = graphql.NewObject(
 			},
 			"street": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.Street, nil
+				},
 			},
 			"unit": &graphql.Field{
 				Type: graphql.String,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.Unit, nil
+				},
 			},
 			"city": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.City, nil
+				},
 			},
 			"state": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.State, nil
+				},
 			},
 			"zip": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.Zip, nil
+				},
 			},
 			"notes": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					a := p.Source.(*Address)
+					return a.Notes, nil
+				},
 			},
 		},
 	},
