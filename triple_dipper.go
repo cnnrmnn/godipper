@@ -144,6 +144,11 @@ func addToCart(svc *service) *graphql.Field {
 			if err != nil {
 				return nil, err
 			}
+			// Populate value fields
+			td, err = svc.tripleDipper.findByID(td.ID)
+			if err != nil {
+				return nil, err
+			}
 			return td, nil
 		},
 	}
