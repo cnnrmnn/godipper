@@ -212,6 +212,7 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return o, err
 	}
+	o.SessionID = sess.ID
 	return o, nil
 }
 
