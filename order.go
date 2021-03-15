@@ -34,6 +34,23 @@ type orderService struct {
 	us  userService
 }
 
+// populate populates the order's list of triple dippers and the order's
+// address (if applicable).
+func (os orderService) populate(o *Order) error {
+	var err error
+	if o.Address.ID != 0 {
+		o.Address, err = os.as.findByID(o.Address.ID)
+		if err != nil {
+			return fmt.Errorf("getting order address: %v", err)
+		}
+	}
+	o.TripleDippers, err = os.tds.findByOrder(o.ID)
+	if err != nil {
+		return fmt.Errorf("getting order triple dippers: %v", err)
+	}
+	return nil
+}
+
 // findByUser retuirns a slice of orders associated with the current user.
 func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	uid, err := os.us.idFromSession(ctx)
@@ -66,15 +83,11 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 				&o.Subtotal, &o.Tax, &o.DeliveryFee, &o.ServiceFee,
 				&o.DeliveryTime)
 		if err != nil {
-			return nil, fmt.Errorf("reading order found by user ID: %v", err)
+			return nil, fmt.Errorf("reading order: %v", err)
 		}
-		o.Address, err = os.as.findByID(o.Address.ID)
+		err = os.populate(&o)
 		if err != nil {
-			return nil, fmt.Errorf("getting order address: %v", err)
-		}
-		o.TripleDippers, err = os.tds.findByOrder(o.ID)
-		if err != nil {
-			return nil, fmt.Errorf("getting order triple dippers: %v", err)
+			return nil, fmt.Errorf("reading order: %v", err)
 		}
 		orders = append(orders, &o)
 	}
@@ -142,13 +155,9 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 		}
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
-	o.Address, err = os.as.findByID(o.Address.ID)
+	err = os.populate(&o)
 	if err != nil {
-		return nil, fmt.Errorf("getting order address: %v", err)
-	}
-	o.TripleDippers, err = os.tds.findByOrder(o.ID)
-	if err != nil {
-		return nil, fmt.Errorf("getting order triple dippers: %v", err)
+		return nil, fmt.Errorf("finding current order: %v", err)
 	}
 	return &o, nil
 }
@@ -176,6 +185,10 @@ func (os orderService) updateOrder(o *Order) error {
 		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.Completed, o.ID)
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
+	}
+	err = os.populate(o)
+	if err != nil {
+		return fmt.Errorf("updating order: %v", err)
 	}
 	return nil
 }

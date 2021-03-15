@@ -49,6 +49,7 @@ type tripleDipper interface {
 
 // order defines the methods that should be implemented by the order service.
 type order interface {
+	populate(o *Order) error
 	findByUser(ctx context.Context) ([]*Order, error)
 	current(ctx context.Context) (*Order, error)
 	create(o *Order) error
