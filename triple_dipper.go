@@ -137,6 +137,8 @@ var tripleDipperType = graphql.NewObject(
 	},
 )
 
+// addToCart returns a GraphQL mutation field that adds the given triple dipper
+// to the current user's current order and resolves to that triple dipper.
 func addToCart(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewNonNull(tripleDipperType),

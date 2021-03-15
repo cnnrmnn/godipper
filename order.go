@@ -136,17 +136,8 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 	return &o, nil
 }
 
-// cart creates a triple dipper that belongs to the current user's current
-// order.
-func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
-	o, err := os.current(ctx)
-	if err != nil {
-		return err
-	}
-	td.OrderID = o.ID
-	return os.tds.create(td)
-}
-
+// updateOrder updates the mutable fields in the database row corresponsing to
+// the given order.
 func (os orderService) updateOrder(o *Order) error {
 	q := `
 		UPDATE orders
@@ -170,6 +161,17 @@ func (os orderService) updateOrder(o *Order) error {
 		return fmt.Errorf("executing order update query: %v", err)
 	}
 	return nil
+}
+
+// cart creates a triple dipper that belongs to the current user's current
+// order.
+func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
+	o, err := os.current(ctx)
+	if err != nil {
+		return err
+	}
+	td.OrderID = o.ID
+	return os.tds.create(td)
 }
 
 // checkOut populates the current user's current order with information from
@@ -310,6 +312,8 @@ func checkOut(svc *service) *graphql.Field {
 	}
 }
 
+// placeOrder returns a GraphQL mutation field that places and resolves to the
+// current user's current order.
 func placeOrder(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewNonNull(orderType),
