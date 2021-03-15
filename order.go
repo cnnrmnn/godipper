@@ -16,6 +16,7 @@ type Order struct {
 	ID            int             `json:"id"`
 	UserID        int             `json:"userId"`
 	SessionID     string          `json:"sessionId"`
+	Location      string          `json:"location"`
 	Address       *Address        `json:"addressId`
 	TripleDippers []*TripleDipper `json:"tripleDippers"`
 	Completed     bool            `json:"completed"`
@@ -60,6 +61,7 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	q := `
 		SELECT
 			order_id, user_id, completed,
+			COALESCE(location, ''),
 			COALESCE(address_id, 0),
 			COALESCE(session_id, ''),
 			COALESCE(subtotal, 0),
@@ -79,9 +81,9 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	for rows.Next() {
 		o := Order{Address: &Address{}}
 		err := rows.
-			Scan(&o.ID, &o.UserID, &o.Completed, &o.Address.ID, &o.SessionID,
-				&o.Subtotal, &o.Tax, &o.DeliveryFee, &o.ServiceFee,
-				&o.DeliveryTime)
+			Scan(&o.ID, &o.UserID, &o.Completed, &o.Location, &o.Address.ID,
+				&o.SessionID, &o.Subtotal, &o.Tax, &o.DeliveryFee,
+				&o.ServiceFee, &o.DeliveryTime)
 		if err != nil {
 			return nil, fmt.Errorf("reading order: %v", err)
 		}
@@ -129,6 +131,7 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 	q := `
 		SELECT
 			order_id, user_id, completed,
+			COALESCE(location, ''),
 			COALESCE(address_id, 0),
 			COALESCE(session_id, ''),
 			COALESCE(subtotal, 0),
@@ -141,9 +144,9 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 		WHERE completed = FALSE AND user_id = ?
 		ORDER BY created_at DESC`
 	err = os.db.QueryRow(q, uid).
-		Scan(&o.ID, &o.UserID, &o.Completed, &o.Address.ID, &o.SessionID,
-			&o.Subtotal, &o.Tax, &o.DeliveryFee, &o.ServiceFee,
-			&o.DeliveryTime)
+		Scan(&o.ID, &o.UserID, &o.Completed, &o.Location, &o.Address.ID,
+			&o.SessionID, &o.Subtotal, &o.Tax, &o.DeliveryFee,
+			&o.ServiceFee, &o.DeliveryTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			no := &Order{UserID: uid}
@@ -188,6 +191,7 @@ func (os orderService) updateOrder(o *Order) error {
 		UPDATE orders
 		SET
 			address_id = ?,
+			location = ?,
 			session_id = ?,
 			subtotal = ?,
 			tax = ?,
@@ -200,7 +204,7 @@ func (os orderService) updateOrder(o *Order) error {
 	if err != nil {
 		return fmt.Errorf("preparing order update query: %v", err)
 	}
-	_, err = stmt.Exec(o.Address.ID, o.SessionID, o.Subtotal, o.Tax,
+	_, err = stmt.Exec(o.Address.ID, o.Location, o.SessionID, o.Subtotal, o.Tax,
 		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.Completed, o.ID)
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
@@ -308,11 +312,12 @@ func (os orderService) place(ctx context.Context, pm *chilis.PaymentMethod) (*Or
 	if err != nil {
 		return nil, err
 	}
-	_, err = sess.Order(pm)
+	loc, err := sess.Order(pm)
 	if err != nil {
 		return nil, err
 	}
 
+	o.Location = loc
 	o.Completed = true
 	err = os.updateOrder(o)
 	if err != nil {
@@ -334,6 +339,9 @@ var orderType = graphql.NewObject(
 			},
 			"sessionId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+			},
+			"location": &graphql.Field{
+				Type: graphql.String,
 			},
 			"tripleDippers": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(tripleDipperType))),

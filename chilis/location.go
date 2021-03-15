@@ -8,12 +8,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-// A Location is a Chili's restuarant location
-type Location struct {
-	Name  string `json:"name"`
-	Phone string `json:"phone"`
-}
-
 // parseNearestID parses and returns the nearest location's ID, if any, from the
 // location search page's root node.
 func parseNearestID(doc *html.Node) (string, error) {
@@ -40,24 +34,13 @@ func parseNearestID(doc *html.Node) (string, error) {
 	return id, nil
 }
 
-// parseLocation parses and returns a Location from an order confirmation page.
-func parseLocation(doc *html.Node) (Location, error) {
-	var loc Location
+// parseLocation parses and returns a location from an order confirmation page.
+func parseLocation(doc *html.Node) (string, error) {
+	var loc string
 	wrp, err := findOne(doc, classQuery("div", "location-address-wrapper"))
 	if err != nil {
 		return loc, fmt.Errorf("parsing location: %v", err)
 	}
 
-	name, err := innerText(wrp, classQuery("div", "location-name"))
-	if err != nil {
-		return loc, fmt.Errorf("parsing location name: %v", err)
-	}
-	phone, err := innerText(wrp, classQuery("a", "location-phone tel"))
-	if err != nil {
-		return loc, fmt.Errorf("parsing location phone: %v", err)
-	}
-	return Location{
-		Name:  name,
-		Phone: phone,
-	}, nil
+	return innerText(wrp, classQuery("div", "location-name"))
 }

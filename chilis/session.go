@@ -189,8 +189,8 @@ func (s *Session) deliveryTime(addr Address, csrf string) (time.Time, error) {
 
 // Order places the order using the given PaymentMethod and returns the
 // Location at which the order was placed.
-func (s *Session) Order(pm *PaymentMethod) (Location, error) {
-	var loc Location
+func (s *Session) Order(pm *PaymentMethod) (string, error) {
+	var loc string
 	clt := s.Client
 	u := "https://www.chilis.com/order/payment"
 
@@ -214,9 +214,5 @@ func (s *Session) Order(pm *PaymentMethod) (Location, error) {
 	if err != nil {
 		return loc, fmt.Errorf("parsing order response: %v", err)
 	}
-	loc, err = parseLocation(doc)
-	if err != nil {
-		return loc, fmt.Errorf("parsing order response: %v", err)
-	}
-	return loc, err
+	return parseLocation(doc)
 }
