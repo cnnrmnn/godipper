@@ -21,7 +21,7 @@ type Session struct {
 // NewSession returns a pointer to a new Session given a session ID.
 func NewSession(id string) (*Session, error) {
 	var sess *Session
-	cook := http.Cookie{Name: "Session", Value: id}
+	cook := http.Cookie{Name: "SESSION", Value: id}
 	clt, err := createClient(&cook)
 	if err != nil {
 		return sess, fmt.Errorf("creating session: %v", err)
