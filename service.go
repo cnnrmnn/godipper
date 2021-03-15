@@ -31,6 +31,7 @@ type extra interface {
 	values(ivid int) ([]*Extra, error)
 	findByItem(iid int) ([]*Extra, error)
 	create(e *Extra, tx *sql.Tx) error
+	destroy(iid int, tx *sql.Tx) error
 }
 
 // item defines the methods that should be implemented by the item service.
@@ -38,6 +39,7 @@ type item interface {
 	values() ([]*Item, error)
 	findByTripleDipper(tdid int) ([]*Item, error)
 	create(it *Item, tx *sql.Tx) error
+	destroy(tdid int, tx *sql.Tx) error
 }
 
 // tripleDipper defines the methods that should be implemented by the
@@ -47,6 +49,7 @@ type tripleDipper interface {
 	findByID(id int) (*TripleDipper, error)
 	findByOrder(oid int) ([]*TripleDipper, error)
 	create(td *TripleDipper) error
+	destroy(tdid int) error
 }
 
 // order defines the methods that should be implemented by the order service.

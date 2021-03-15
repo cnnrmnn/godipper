@@ -97,6 +97,20 @@ func (es extraService) create(e *Extra, tx *sql.Tx) error {
 	return nil
 }
 
+// destroy destroys the extras with the given item ID.
+func (es extraService) destroy(iid int, tx *sql.Tx) error {
+	q := "DELETE FROM extras WHERE item_id = ?"
+	stmt, err := tx.Prepare(q)
+	if err != nil {
+		return fmt.Errorf("preparing extra deletion query: %v", err)
+	}
+	_, err = stmt.Exec(iid)
+	if err != nil {
+		return fmt.Errorf("executing extra deletion query: %v", err)
+	}
+	return nil
+}
+
 // extraType is the GraphQL type for Extra.
 var extraType = graphql.NewObject(
 	graphql.ObjectConfig{

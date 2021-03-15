@@ -124,6 +124,37 @@ func (is itemService) create(it *Item, tx *sql.Tx) error {
 	return nil
 }
 
+// destroy destroys the items with the given triple dipper ID.
+func (is itemService) destroy(tdid int, tx *sql.Tx) error {
+	q := "SELECT item_id FROM items WHERE triple_dipper_id = ?"
+	rows, err := is.db.Query(q, tdid)
+	if err != nil {
+		return fmt.Errorf("finding item IDs: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var iid int
+		err := rows.Scan(&iid)
+		if err != nil {
+			return fmt.Errorf("reading item ID: %v", err)
+		}
+		err = is.es.destroy(iid, tx)
+		if err != nil {
+			return fmt.Errorf("destroying item extra: %v", err)
+		}
+	}
+	q = "DELETE FROM items WHERE triple_dipper_id = ?"
+	stmt, err := tx.Prepare(q)
+	if err != nil {
+		return fmt.Errorf("preparing item deletion query: %v", err)
+	}
+	_, err = stmt.Exec(tdid)
+	if err != nil {
+		return fmt.Errorf("executing item deletion query: %v", err)
+	}
+	return nil
+}
+
 // itemType is the GraphQL type for Item.
 var itemType = graphql.NewObject(
 	graphql.ObjectConfig{

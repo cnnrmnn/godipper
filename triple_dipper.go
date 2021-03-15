@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/cnnrmnn/godipper/chilis"
@@ -96,7 +97,7 @@ func (tds tripleDipperService) findByOrder(oid int) ([]*TripleDipper, error) {
 func (tds tripleDipperService) create(td *TripleDipper) error {
 	tx, err := tds.db.Begin()
 	if err != nil {
-		return fmt.Errorf("starting triple dipper transaction: %v", err)
+		return fmt.Errorf("starting triple dipper insertion transaction: %v", err)
 	}
 	q := "INSERT INTO triple_dippers (order_id) VALUES (?)"
 	stmt, err := tx.Prepare(q)
@@ -124,11 +125,45 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 	}
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("commiting triple dipper transaction: %v", err)
+		return fmt.Errorf("commiting triple dipper insertion transaction: %v", err)
 	}
 	err = tds.populate(td)
 	if err != nil {
 		return fmt.Errorf("creating triple dipper: %v", err)
+	}
+	return nil
+}
+
+// destroy destroys the triple dipper with the given ID or returns an error
+// if none exist.
+func (tds tripleDipperService) destroy(tdid int) error {
+	tx, err := tds.db.Begin()
+	if err != nil {
+		return fmt.Errorf("starting triple dipper deletion transaction: %v", err)
+	}
+	err = tds.is.destroy(tdid, tx)
+	if err != nil {
+		return fmt.Errorf("destroying triple dipper items: %v", err)
+	}
+	q := "DELETE FROM triple_dippers WHERE triple_dipper_id = ?"
+	stmt, err := tx.Prepare(q)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("preparing triple dipper deletion query: %v", err)
+	}
+	res, err := stmt.Exec(tdid)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("executing triple dipper deletion query: %v", err)
+	}
+	cnt, err := res.RowsAffected()
+	if cnt == 0 {
+		tx.Rollback()
+		return errors.New("triple dipper does not exist")
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("commiting triple dipper deletion transaction: %v", err)
 	}
 	return nil
 }
