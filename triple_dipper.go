@@ -33,6 +33,17 @@ type tripleDipperService struct {
 	is item
 }
 
+// populate populates each of the triple dipper's items and their extras
+// with values using their value IDs.
+func (tds tripleDipperService) populate(td *TripleDipper) error {
+	var err error
+	td.Items, err = tds.is.findByTripleDipper(td.ID)
+	if err != nil {
+		return fmt.Errorf("populating triple dipper: %v", err)
+	}
+	return nil
+}
+
 // findByID returns the triple dipper with the given ID or an error if no
 // triple dipper has the given ID.
 func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
@@ -42,9 +53,9 @@ func (tds tripleDipperService) findByID(id int) (*TripleDipper, error) {
 	if err != nil {
 		return nil, fmt.Errorf("finding triple dipper by ID: %v", err)
 	}
-	td.Items, err = tds.is.findByTripleDipper(id)
+	err = tds.populate(&td)
 	if err != nil {
-		return nil, fmt.Errorf("finding triple dipper items by ID: %v", err)
+		return nil, fmt.Errorf("finding triple dipper by ID: %v", err)
 	}
 	return &td, nil
 }
@@ -68,11 +79,10 @@ func (tds tripleDipperService) findByOrder(oid int) ([]*TripleDipper, error) {
 		if err != nil {
 			return nil, fmt.Errorf("reading triple dipper: %v", err)
 		}
-		items, err := tds.is.findByTripleDipper(td.ID)
+		err = tds.populate(&td)
 		if err != nil {
-			return nil, fmt.Errorf("finding triple dipper items: %v", err)
+			return nil, fmt.Errorf("reading triple dipper: %v", err)
 		}
-		td.Items = items
 		tdrs = append(tdrs, &td)
 	}
 	err = rows.Err()
@@ -116,6 +126,10 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 	if err != nil {
 		return fmt.Errorf("commiting triple dipper transaction: %v", err)
 	}
+	err = tds.populate(td)
+	if err != nil {
+		return fmt.Errorf("creating triple dipper: %v", err)
+	}
 	return nil
 }
 
@@ -136,43 +150,3 @@ var tripleDipperType = graphql.NewObject(
 		},
 	},
 )
-
-// addToCart returns a GraphQL mutation field that adds the given triple dipper
-// to the current user's current order and resolves to that triple dipper.
-func addToCart(svc *service) *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.NewNonNull(tripleDipperType),
-		Args: graphql.FieldConfigArgument{
-			"items": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(itemInputType))),
-			},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			var items []*Item
-			for _, item := range p.Args["items"].([]interface{}) {
-				iin := item.(map[string]interface{})
-				ivid := iin["valueId"].(int)
-				var extras []*Extra
-				for _, ein := range iin["extras"].([]interface{}) {
-					evid := ein.(int)
-					extras = append(extras, &Extra{ValueID: evid})
-				}
-				items = append(items, &Item{ValueID: ivid, Extras: extras})
-			}
-
-			td := &TripleDipper{
-				Items: items,
-			}
-			err := svc.order.cart(td, p.Context)
-			if err != nil {
-				return nil, err
-			}
-			// Populate value fields
-			td, err = svc.tripleDipper.findByID(td.ID)
-			if err != nil {
-				return nil, err
-			}
-			return td, nil
-		},
-	}
-}

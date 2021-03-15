@@ -41,6 +41,7 @@ type item interface {
 // tripleDipper defines the methods that should be implemented by the
 // tripleDipper service.
 type tripleDipper interface {
+	populate(td *TripleDipper) error
 	findByID(id int) (*TripleDipper, error)
 	findByOrder(oid int) ([]*TripleDipper, error)
 	create(td *TripleDipper) error

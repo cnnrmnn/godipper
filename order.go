@@ -338,6 +338,41 @@ func currentOrder(svc *service) *graphql.Field {
 	}
 }
 
+// addToCart returns a GraphQL mutation field that adds the given triple dipper
+// to the current user's current order and resolves to that triple dipper.
+func addToCart(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(tripleDipperType),
+		Args: graphql.FieldConfigArgument{
+			"items": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(itemInputType))),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			var items []*Item
+			for _, item := range p.Args["items"].([]interface{}) {
+				iin := item.(map[string]interface{})
+				ivid := iin["valueId"].(int)
+				var extras []*Extra
+				for _, ein := range iin["extras"].([]interface{}) {
+					evid := ein.(int)
+					extras = append(extras, &Extra{ValueID: evid})
+				}
+				items = append(items, &Item{ValueID: ivid, Extras: extras})
+			}
+
+			td := &TripleDipper{
+				Items: items,
+			}
+			err := svc.order.cart(td, p.Context)
+			if err != nil {
+				return nil, err
+			}
+			return td, nil
+		},
+	}
+}
+
 // checkOut returns a GraphQL mutation field that populates the current user's
 // current order with information from Chili's given an address ID.
 func checkOut(svc *service) *graphql.Field {
