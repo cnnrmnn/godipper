@@ -36,6 +36,35 @@ type itemService struct {
 	es extra
 }
 
+// values returns a slice of all available item values.
+func (is itemService) values() ([]*Item, error) {
+	q := "SELECT item_value_id, item_value FROM item_values"
+	rows, err := is.db.Query(q)
+	if err != nil {
+		return nil, fmt.Errorf("finding item values: %v", err)
+	}
+	defer rows.Close()
+	var its []*Item
+	for rows.Next() {
+		var it Item
+		err = rows.Scan(&it.ValueID, &it.Value)
+		if err != nil {
+			return nil, fmt.Errorf("scanning item value: %v", err)
+		}
+		exs, err := is.es.values(it.ValueID)
+		if err != nil {
+			fmt.Errorf("finding item extra values: %v", err)
+		}
+		it.Extras = exs
+		its = append(its, &it)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("reading item values: %v", err)
+	}
+	return its, nil
+}
+
 // findByTripleDipper returns a slice of items that belong to the triple dipper
 // with the given ID.
 func (is itemService) findByTripleDipper(tdid int) ([]*Item, error) {
@@ -119,6 +148,24 @@ var itemType = graphql.NewObject(
 	},
 )
 
+// itemValueType is the GraphQL type for an item value.
+var itemValueType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "ItemValue",
+		Fields: graphql.Fields{
+			"valueId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"value": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"extras": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(extraValueType))),
+			},
+		},
+	},
+)
+
 // itemInputType is the GraphQL input type for Item.
 var itemInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
@@ -133,3 +180,14 @@ var itemInputType = graphql.NewInputObject(
 		},
 	},
 )
+
+// itemValues returns a GraphQL query field that resolves to a list of
+// available item values.
+func itemValues(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(itemValueType))),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return svc.item.values()
+		},
+	}
+}

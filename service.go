@@ -28,12 +28,14 @@ type address interface {
 
 // extra defines the methods that should be implemented by the extra service.
 type extra interface {
+	values(ivid int) ([]*Extra, error)
 	findByItem(iid int) ([]*Extra, error)
 	create(e *Extra, tx *sql.Tx) error
 }
 
 // item defines the methods that should be implemented by the item service.
 type item interface {
+	values() ([]*Item, error)
 	findByTripleDipper(tdid int) ([]*Item, error)
 	create(it *Item, tx *sql.Tx) error
 }

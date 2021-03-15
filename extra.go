@@ -20,6 +20,35 @@ type extraService struct {
 	db *sql.DB
 }
 
+// values returns a slice of all available extra values.
+func (es extraService) values(ivid int) ([]*Extra, error) {
+	q := `
+		SELECT ev.extra_value_id, ev.extra_value
+		FROM extra_values ev
+			INNER JOIN item_extra_combinations cmb
+			ON ev.extra_value_id = cmb.extra_value_id
+		WHERE cmb.item_value_id = ?`
+	rows, err := es.db.Query(q, ivid)
+	if err != nil {
+		return nil, fmt.Errorf("finding extra values: %v", err)
+	}
+	defer rows.Close()
+	var exs []*Extra
+	for rows.Next() {
+		var ex Extra
+		err = rows.Scan(&ex.ValueID, &ex.Value)
+		if err != nil {
+			return nil, fmt.Errorf("scanning extra value: %v", err)
+		}
+		exs = append(exs, &ex)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("reading extra values: %v", err)
+	}
+	return exs, nil
+}
+
 // findByItem returns a slice of extras that belong to the item with the given
 // ID.
 func (es extraService) findByItem(iid int) ([]*Extra, error) {
@@ -79,6 +108,21 @@ var extraType = graphql.NewObject(
 			"itemId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
+			"valueId": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+			"value": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+	},
+)
+
+// extraValueType is the GraphQL type for an item value.
+var extraValueType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "ExtraValue",
+		Fields: graphql.Fields{
 			"valueId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
