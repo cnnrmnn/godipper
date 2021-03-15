@@ -160,11 +160,7 @@ func addresses(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewList(graphql.NewNonNull(addressType)),
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			addrs, err := svc.address.findByUser(p.Context)
-			if err != nil {
-				return nil, err
-			}
-			return addrs, nil
+			return svc.address.findByUser(p.Context)
 		},
 	}
 }
@@ -211,7 +207,6 @@ func createAddress(svc *service) *graphql.Field {
 			if ok {
 				a.Notes = notes
 			}
-
 			err := svc.address.create(a, p.Context)
 			if err != nil {
 				return nil, err

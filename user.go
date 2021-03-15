@@ -64,11 +64,7 @@ func (us userService) me(ctx context.Context) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	u, err := us.findByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
+	return us.findByID(id)
 }
 
 // signUp creates a user provided that the given verification code is valid.
@@ -85,20 +81,20 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 				VALUES (?, ?, ?, ?)`
 	stmt, err := us.db.Prepare(q)
 	if err != nil {
-		return fmt.Errorf("failed to prepare user insertion query: %v", err)
+		return fmt.Errorf("preparing user insertion query: %v", err)
 	}
 	res, err := stmt.Exec(u.FirstName, u.LastName, u.Phone, u.Email)
 	if err != nil {
-		return fmt.Errorf("failed to execute user insertion query: %v", err)
+		return fmt.Errorf("executing user insertion query: %v", err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("failed to get user ID: %v", err)
+		return fmt.Errorf("getting user ID: %v", err)
 	}
 	u.ID = int(id)
 	err = createSession(u.ID, us.sm, ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("creating session: %v", err)
 	}
 	return nil
 }
@@ -108,18 +104,18 @@ func (us userService) signUp(u *User, code string, ctx context.Context) error {
 func (us userService) logIn(phone, code string, ctx context.Context) (*User, error) {
 	ok, err := checkToken(phone, code)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check verification code: %v", err)
+		return nil, fmt.Errorf("checking verification code: %v", err)
 	}
 	if !ok {
 		return nil, errors.New("verification code is invalid")
 	}
 	u, err := us.findByPhone(phone)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get authenticated user: %v", err)
+		return nil, fmt.Errorf("getting authenticated user: %v", err)
 	}
 	err = createSession(u.ID, us.sm, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %v", err)
+		return nil, fmt.Errorf("creating session: %v", err)
 	}
 	return u, nil
 }
@@ -195,11 +191,7 @@ func me(svc *service) *graphql.Field {
 	return &graphql.Field{
 		Type: userType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			u, err := svc.user.me(p.Context)
-			if err != nil {
-				return nil, err
-			}
-			return u, nil
+			return svc.user.me(p.Context)
 		},
 	}
 }
@@ -239,7 +231,7 @@ func signUp(svc *service) *graphql.Field {
 			if err != nil {
 				return nil, err
 			}
-			return u, nil
+			return u, err
 		},
 	}
 }
@@ -260,11 +252,7 @@ func logIn(svc *service) *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			phone := p.Args["phone"].(string)
 			code := p.Args["code"].(string)
-			u, err := svc.user.logIn(phone, code, p.Context)
-			if err != nil {
-				return nil, err
-			}
-			return u, nil
+			return svc.user.logIn(phone, code, p.Context)
 		},
 	}
 }
