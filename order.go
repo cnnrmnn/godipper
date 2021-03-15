@@ -15,7 +15,7 @@ import (
 type Order struct {
 	ID           int       `json:"id"`
 	UserID       int       `json:"userId"`
-	AddressID    int       `json:"addressId`
+	Address      *Address  `json:"addressId`
 	SessionID    string    `json:"sessionId"`
 	Completed    bool      `json:"completed"`
 	Subtotal     float32   `json:"subtotal"`
@@ -59,13 +59,17 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 	defer rows.Close()
 	var orders []*Order
 	for rows.Next() {
-		var o Order
+		o := Order{Address: &Address{}}
 		err := rows.
-			Scan(&o.ID, &o.UserID, &o.Completed, &o.AddressID, &o.SessionID,
+			Scan(&o.ID, &o.UserID, &o.Completed, &o.Address.ID, &o.SessionID,
 				&o.Subtotal, &o.Tax, &o.DeliveryFee, &o.ServiceFee,
 				&o.DeliveryTime)
 		if err != nil {
 			return nil, fmt.Errorf("reading order found by user ID: %v", err)
+		}
+		o.Address, err = os.as.findByID(o.Address.ID)
+		if err != nil {
+			return nil, fmt.Errorf("getting order address: %v", err)
 		}
 		orders = append(orders, &o)
 	}
@@ -99,7 +103,7 @@ func (os orderService) create(o *Order) error {
 // current return the current user's current order. If the current user has no
 // current order, it creates an order and returns it.
 func (os orderService) current(ctx context.Context) (*Order, error) {
-	var o Order
+	o := Order{Address: &Address{}}
 	uid, err := os.us.idFromSession(ctx)
 	if err != nil {
 		return nil, err
@@ -119,7 +123,7 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 		WHERE completed = FALSE AND user_id = ?
 		ORDER BY created_at DESC`
 	err = os.db.QueryRow(q, uid).
-		Scan(&o.ID, &o.UserID, &o.Completed, &o.AddressID, &o.SessionID,
+		Scan(&o.ID, &o.UserID, &o.Completed, &o.Address.ID, &o.SessionID,
 			&o.Subtotal, &o.Tax, &o.DeliveryFee, &o.ServiceFee,
 			&o.DeliveryTime)
 	if err != nil {
@@ -132,6 +136,10 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 			return no, nil
 		}
 		return nil, fmt.Errorf("finding current order: %v", err)
+	}
+	o.Address, err = os.as.findByID(o.Address.ID)
+	if err != nil {
+		return nil, fmt.Errorf("getting order address: %v", err)
 	}
 	return &o, nil
 }
@@ -155,7 +163,7 @@ func (os orderService) updateOrder(o *Order) error {
 	if err != nil {
 		return fmt.Errorf("preparing order update query: %v", err)
 	}
-	_, err = stmt.Exec(o.AddressID, o.SessionID, o.Subtotal, o.Tax,
+	_, err = stmt.Exec(o.Address.ID, o.SessionID, o.Subtotal, o.Tax,
 		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.Completed, o.ID)
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
@@ -222,7 +230,7 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	o.DeliveryFee = info.DeliveryFee
 	o.ServiceFee = info.ServiceFee
 	o.DeliveryTime = info.DeliveryTime
-	o.AddressID = aid
+	o.Address.ID = aid
 	o.SessionID = sess.ID
 	err = os.updateOrder(o)
 	if err != nil {
@@ -268,8 +276,8 @@ var orderType = graphql.NewObject(
 			"userId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
-			"addressId": &graphql.Field{
-				Type: graphql.NewNonNull(graphql.Int),
+			"address": &graphql.Field{
+				Type: graphql.NewNonNull(addressType),
 			},
 			"sessionId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
@@ -303,6 +311,17 @@ func orders(svc *service) *graphql.Field {
 		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(orderType))),
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			return svc.order.findByUser(p.Context)
+		},
+	}
+}
+
+// currentOrder returns a GraphQL query field that resolves to the current user's
+// current order.
+func currentOrder(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(orderType),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return svc.order.current(p.Context)
 		},
 	}
 }
