@@ -11,6 +11,7 @@ func schema(svc *service) (graphql.Schema, error) {
 	queryFields := graphql.Fields{
 		"me":        me(svc),
 		"addresses": addresses(svc),
+		"orders":    orders(svc),
 	}
 	queryType := graphql.NewObject(
 		graphql.ObjectConfig{Name: "Query", Fields: queryFields},

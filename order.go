@@ -51,7 +51,7 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 			COALESCE(delivery_time,
 				STR_TO_DATE('1970-01-01 00:00:01', '%Y-%m-%d %H:%i:%s'))
 		FROM orders
-		WHERE user_id = ?`
+		WHERE completed = TRUE AND user_id = ?`
 	rows, err := os.db.Query(q, uid)
 	if err != nil {
 		return nil, fmt.Errorf("finding orders by user ID: %v", err)
@@ -295,6 +295,17 @@ var orderType = graphql.NewObject(
 		},
 	},
 )
+
+// orders returns a GraphQL query field that resolves to the current user's
+// completed orders.
+func orders(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(orderType))),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return svc.order.findByUser(p.Context)
+		},
+	}
+}
 
 // checkOut returns a GraphQL mutation field that populates the current user's
 // current order with information from Chili's given an address ID.
