@@ -52,9 +52,9 @@ type order interface {
 	current(ctx context.Context) (*Order, error)
 	create(o *Order) error
 	cart(td *TripleDipper, ctx context.Context) error
-	updateOrder(o *Order, info chilis.OrderInfo) error
+	updateOrder(o *Order) error
 	checkOut(ctx context.Context, aid int) (*Order, error)
-	place(ctx context.Context) (*Order, error)
+	place(ctx context.Context, pm *chilis.PaymentMethod) (*Order, error)
 }
 
 // service defines interface types for services used by GraphQL resolvers

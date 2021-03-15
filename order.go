@@ -147,12 +147,7 @@ func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
 	return os.tds.create(td)
 }
 
-func (os orderService) updateOrder(o *Order, info chilis.OrderInfo) error {
-	o.Subtotal = info.Subtotal
-	o.Tax = info.Tax
-	o.DeliveryFee = info.DeliveryFee
-	o.ServiceFee = info.ServiceFee
-	o.DeliveryTime = info.DeliveryTime
+func (os orderService) updateOrder(o *Order) error {
 	q := `
 		UPDATE orders
 		SET
@@ -162,14 +157,15 @@ func (os orderService) updateOrder(o *Order, info chilis.OrderInfo) error {
 			tax = ?,
 			delivery_fee = ?,
 			service_fee = ?,
-			delivery_time = ?
+			delivery_time = ?,
+			completed = ?
 		WHERE order_id = ?`
 	stmt, err := os.db.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing order update query: %v", err)
 	}
 	_, err = stmt.Exec(o.AddressID, o.SessionID, o.Subtotal, o.Tax,
-		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.ID)
+		o.DeliveryFee, o.ServiceFee, o.DeliveryTime, o.Completed, o.ID)
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
 	}
@@ -181,56 +177,82 @@ func (os orderService) updateOrder(o *Order, info chilis.OrderInfo) error {
 func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	o, err := os.current(ctx)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	tdrs, err := os.tds.findByOrder(o.ID)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	if len(tdrs) == 0 {
-		return o, errors.New("cart is empty")
+		return nil, errors.New("cart is empty")
 	}
 
 	sess, err := chilis.StartSession()
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	a, err := os.as.findByID(aid)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	err = sess.SetLocation(a.Address)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 
 	for _, td := range tdrs {
 		err = sess.Cart(td)
 		if err != nil {
-			return o, err
+			return nil, err
 		}
 	}
 
 	u, err := os.us.me(ctx)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	info, err := sess.Checkout(u.Customer, a.Address)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
+	o.Subtotal = info.Subtotal
+	o.Tax = info.Tax
+	o.DeliveryFee = info.DeliveryFee
+	o.ServiceFee = info.ServiceFee
+	o.DeliveryTime = info.DeliveryTime
 	o.AddressID = aid
 	o.SessionID = sess.ID
-	err = os.updateOrder(o, info)
+	err = os.updateOrder(o)
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 	return o, nil
 }
 
 // place places and returns the current user's current order.
-func (os orderService) place(ctx context.Context) (*Order, error) {
-	return nil, nil
+func (os orderService) place(ctx context.Context, pm *chilis.PaymentMethod) (*Order, error) {
+	o, err := os.current(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if o.SessionID == "" {
+		return nil, errors.New("check out before placing an order")
+	}
+	sess, err := chilis.NewSession(o.SessionID)
+	if err != nil {
+		return nil, err
+	}
+	_, err = sess.Order(pm)
+	if err != nil {
+		return nil, err
+	}
+
+	o.Completed = true
+	err = os.updateOrder(o)
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
 // orderType is the GraphQL type for Order.
@@ -284,6 +306,43 @@ func checkOut(svc *service) *graphql.Field {
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			return svc.order.checkOut(p.Context, p.Args["addressId"].(int))
+		},
+	}
+}
+
+func placeOrder(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(orderType),
+		Args: graphql.FieldConfigArgument{
+			"number": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"cvv": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"name": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"month": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"year": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"zip": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			pm := &chilis.PaymentMethod{
+				Number: p.Args["number"].(string),
+				CVV:    p.Args["cvv"].(string),
+				Name:   p.Args["name"].(string),
+				Month:  p.Args["month"].(string),
+				Year:   p.Args["year"].(string),
+				Zip:    p.Args["zip"].(string),
+			}
+			return svc.order.place(p.Context, pm)
 		},
 	}
 }
