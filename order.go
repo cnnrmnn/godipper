@@ -162,6 +162,21 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 	return &o, nil
 }
 
+// currentID returns the ID of the current user's current order.
+func (os orderService) currentID(ctx context.Context) (int, error) {
+	var id int
+	uid, err := os.us.idFromSession(ctx)
+	if err != nil {
+		return id, err
+	}
+	q := "SELECT order_id FROM orders WHERE user_id = ?"
+	err = os.db.QueryRow(q, uid).Scan(&id)
+	if err != nil {
+		return id, fmt.Errorf("finding current order ID: %v", err)
+	}
+	return id, nil
+}
+
 // updateOrder updates the mutable fields in the database row corresponsing to
 // the given order.
 func (os orderService) updateOrder(o *Order) error {
@@ -196,12 +211,22 @@ func (os orderService) updateOrder(o *Order) error {
 // cart creates a triple dipper that belongs to the current user's current
 // order.
 func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
-	o, err := os.current(ctx)
+	id, err := os.currentID(ctx)
 	if err != nil {
 		return err
 	}
-	td.OrderID = o.ID
+	td.OrderID = id
 	return os.tds.create(td)
+}
+
+// cart creates a triple dipper that belongs to the current user's current
+// order.
+func (os orderService) uncart(tdid int, ctx context.Context) error {
+	id, err := os.currentID(ctx)
+	if err != nil {
+		return err
+	}
+	return os.tds.destroy(tdid, id)
 }
 
 // checkOut populates the current user's current order with information from

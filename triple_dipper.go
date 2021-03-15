@@ -136,12 +136,19 @@ func (tds tripleDipperService) create(td *TripleDipper) error {
 
 // destroy destroys the triple dipper with the given ID or returns an error
 // if none exist.
-func (tds tripleDipperService) destroy(tdid int) error {
+func (tds tripleDipperService) destroy(id int, oid int) error {
+	td, err := tds.findByID(id)
+	if err != nil {
+		return fmt.Errorf("finding triple dipper to be destroyed: %v", err)
+	}
+	if td.OrderID != oid {
+		return errors.New("triple dipper does not belong to current order")
+	}
 	tx, err := tds.db.Begin()
 	if err != nil {
 		return fmt.Errorf("starting triple dipper deletion transaction: %v", err)
 	}
-	err = tds.is.destroy(tdid, tx)
+	err = tds.is.destroy(id, tx)
 	if err != nil {
 		return fmt.Errorf("destroying triple dipper items: %v", err)
 	}
@@ -151,15 +158,10 @@ func (tds tripleDipperService) destroy(tdid int) error {
 		tx.Rollback()
 		return fmt.Errorf("preparing triple dipper deletion query: %v", err)
 	}
-	res, err := stmt.Exec(tdid)
+	_, err = stmt.Exec(id)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("executing triple dipper deletion query: %v", err)
-	}
-	cnt, err := res.RowsAffected()
-	if cnt == 0 {
-		tx.Rollback()
-		return errors.New("triple dipper does not exist")
 	}
 	err = tx.Commit()
 	if err != nil {

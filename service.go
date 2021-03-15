@@ -49,7 +49,7 @@ type tripleDipper interface {
 	findByID(id int) (*TripleDipper, error)
 	findByOrder(oid int) ([]*TripleDipper, error)
 	create(td *TripleDipper) error
-	destroy(tdid int) error
+	destroy(id int, oid int) error
 }
 
 // order defines the methods that should be implemented by the order service.
@@ -57,8 +57,10 @@ type order interface {
 	populate(o *Order) error
 	findByUser(ctx context.Context) ([]*Order, error)
 	current(ctx context.Context) (*Order, error)
+	currentID(ctx context.Context) (int, error)
 	create(o *Order) error
 	cart(td *TripleDipper, ctx context.Context) error
+	uncart(tdid int, ctx context.Context) error
 	updateOrder(o *Order) error
 	checkOut(ctx context.Context, aid int) (*Order, error)
 	place(ctx context.Context, pm *chilis.PaymentMethod) (*Order, error)
