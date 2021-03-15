@@ -232,6 +232,8 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 		return nil, err
 	}
 
+	// Tried to do this concurrently but Chili's server couldn't handle
+	// concurrent requests.
 	for _, td := range tdrs {
 		err = sess.Cart(td)
 		if err != nil {
