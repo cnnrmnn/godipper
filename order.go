@@ -169,7 +169,11 @@ func (os orderService) currentID(ctx context.Context) (int, error) {
 	if err != nil {
 		return id, err
 	}
-	q := "SELECT order_id FROM orders WHERE user_id = ?"
+	q := `
+		SELECT order_id
+		FROM orders
+		WHERE completed = FALSE AND user_id = ?
+		ORDER BY created_at DESC`
 	err = os.db.QueryRow(q, uid).Scan(&id)
 	if err != nil {
 		return id, fmt.Errorf("finding current order ID: %v", err)
@@ -219,7 +223,7 @@ func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
 	return os.tds.create(td)
 }
 
-// cart creates a triple dipper that belongs to the current user's current
+// uncart creates a triple dipper that belongs to the current user's current
 // order.
 func (os orderService) uncart(tdid int, ctx context.Context) error {
 	id, err := os.currentID(ctx)
@@ -409,6 +413,27 @@ func addToCart(svc *service) *graphql.Field {
 				return nil, err
 			}
 			return td, nil
+		},
+	}
+}
+
+// removeFromCart returns a GraphQL mutation field that removes the given
+// triple dipper from the current user's current order and resolves to a
+// boolean value reflecting the outcome of the operation.
+func removeFromCart(svc *service) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewNonNull(graphql.Boolean),
+		Args: graphql.FieldConfigArgument{
+			"tripleDipperId": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			err := svc.order.uncart(p.Args["tripleDipperId"].(int), p.Context)
+			if err != nil {
+				return false, err
+			}
+			return true, nil
 		},
 	}
 }
