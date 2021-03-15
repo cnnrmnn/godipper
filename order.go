@@ -13,16 +13,17 @@ import (
 
 // An Order is an order of triple dippers.
 type Order struct {
-	ID           int       `json:"id"`
-	UserID       int       `json:"userId"`
-	Address      *Address  `json:"addressId`
-	SessionID    string    `json:"sessionId"`
-	Completed    bool      `json:"completed"`
-	Subtotal     float32   `json:"subtotal"`
-	Tax          float32   `json:"tax"`
-	DeliveryFee  float32   `json:"deliveryFee"`
-	ServiceFee   float32   `json:"serviceFee"`
-	DeliveryTime time.Time `json:"deliveryTime"`
+	ID            int             `json:"id"`
+	UserID        int             `json:"userId"`
+	SessionID     string          `json:"sessionId"`
+	Address       *Address        `json:"addressId`
+	TripleDippers []*TripleDipper `json:"tripleDippers"`
+	Completed     bool            `json:"completed"`
+	Subtotal      float32         `json:"subtotal"`
+	Tax           float32         `json:"tax"`
+	DeliveryFee   float32         `json:"deliveryFee"`
+	ServiceFee    float32         `json:"serviceFee"`
+	DeliveryTime  time.Time       `json:"deliveryTime"`
 }
 
 // orderService implements the order interface. Its methods manage orders.
@@ -70,6 +71,10 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 		o.Address, err = os.as.findByID(o.Address.ID)
 		if err != nil {
 			return nil, fmt.Errorf("getting order address: %v", err)
+		}
+		o.TripleDippers, err = os.tds.findByOrder(o.ID)
+		if err != nil {
+			return nil, fmt.Errorf("getting order triple dippers: %v", err)
 		}
 		orders = append(orders, &o)
 	}
@@ -140,6 +145,10 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 	o.Address, err = os.as.findByID(o.Address.ID)
 	if err != nil {
 		return nil, fmt.Errorf("getting order address: %v", err)
+	}
+	o.TripleDippers, err = os.tds.findByOrder(o.ID)
+	if err != nil {
+		return nil, fmt.Errorf("getting order triple dippers: %v", err)
 	}
 	return &o, nil
 }
@@ -276,11 +285,14 @@ var orderType = graphql.NewObject(
 			"userId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Int),
 			},
-			"address": &graphql.Field{
-				Type: graphql.NewNonNull(addressType),
-			},
 			"sessionId": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
+			},
+			"tripleDippers": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(tripleDipperType))),
+			},
+			"address": &graphql.Field{
+				Type: graphql.NewNonNull(addressType),
 			},
 			"completed": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
