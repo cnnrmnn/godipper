@@ -256,6 +256,9 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return nil, err
 	}
+	if o.UserID != a.UserID {
+		return nil, errors.New("address does not belong to current user")
+	}
 	err = sess.SetLocation(a.Address)
 	if err != nil {
 		return nil, err
