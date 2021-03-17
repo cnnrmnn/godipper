@@ -9,6 +9,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/graphql-go/handler"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -25,14 +26,14 @@ func main() {
 	es := extraService{db: db}
 	is := itemService{db: db, es: es}
 	tds := tripleDipperService{db: db, is: is}
-	os := orderService{db: db, as: as, tds: tds, us: us}
+	ors := orderService{db: db, as: as, tds: tds, us: us}
 	svc := &service{
 		user:         us,
 		address:      as,
 		extra:        es,
 		item:         is,
 		tripleDipper: tds,
-		order:        os,
+		order:        ors,
 	}
 
 	schema, err := schema(svc)
@@ -40,12 +41,17 @@ func main() {
 		log.Fatalf("starting server: %v", err)
 	}
 
-	h := handler.New(&handler.Config{
+	mux := http.NewServeMux()
+	mux.Handle("/graphql", handler.New(&handler.Config{
 		Schema:   &schema,
 		Pretty:   true,
 		GraphiQL: true,
+	}))
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{os.Getenv("CLIENT_ORIGIN")},
+		AllowCredentials: true,
 	})
 
-	http.Handle("/graphql", sm.LoadAndSave(h))
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe(":3000", c.Handler(mux)))
 }
