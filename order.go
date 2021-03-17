@@ -37,15 +37,15 @@ type orderService struct {
 
 // populate populates the order's list of triple dippers and the order's
 // address (if applicable).
-func (os orderService) populate(o *Order) error {
+func (ors orderService) populate(o *Order) error {
 	var err error
 	if o.Address.ID != 0 {
-		o.Address, err = os.as.findByID(o.Address.ID)
+		o.Address, err = ors.as.findByID(o.Address.ID)
 		if err != nil {
 			return fmt.Errorf("getting order address: %v", err)
 		}
 	}
-	o.TripleDippers, err = os.tds.findByOrder(o.ID)
+	o.TripleDippers, err = ors.tds.findByOrder(o.ID)
 	if err != nil {
 		return fmt.Errorf("getting order triple dippers: %v", err)
 	}
@@ -53,8 +53,8 @@ func (os orderService) populate(o *Order) error {
 }
 
 // findByUser retuirns a slice of orders associated with the current user.
-func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
-	uid, err := os.us.idFromSession(ctx)
+func (ors orderService) findByUser(ctx context.Context) ([]*Order, error) {
+	uid, err := ors.us.idFromSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 				STR_TO_DATE('1970-01-01 00:00:01', '%Y-%m-%d %H:%i:%s'))
 		FROM orders
 		WHERE completed = TRUE AND user_id = ?`
-	rows, err := os.db.Query(q, uid)
+	rows, err := ors.db.Query(q, uid)
 	if err != nil {
 		return nil, fmt.Errorf("finding orders by user ID: %v", err)
 	}
@@ -87,7 +87,7 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 		if err != nil {
 			return nil, fmt.Errorf("reading order: %v", err)
 		}
-		err = os.populate(&o)
+		err = ors.populate(&o)
 		if err != nil {
 			return nil, fmt.Errorf("reading order: %v", err)
 		}
@@ -101,9 +101,9 @@ func (os orderService) findByUser(ctx context.Context) ([]*Order, error) {
 }
 
 // create creates an order.
-func (os orderService) create(o *Order) error {
+func (ors orderService) create(o *Order) error {
 	q := "INSERT INTO orders (user_id) VALUES (?)"
-	stmt, err := os.db.Prepare(q)
+	stmt, err := ors.db.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing order insertion query: %v", err)
 	}
@@ -122,9 +122,9 @@ func (os orderService) create(o *Order) error {
 
 // current return the current user's current order. If the current user has no
 // current order, it creates an order and returns it.
-func (os orderService) current(ctx context.Context) (*Order, error) {
+func (ors orderService) current(ctx context.Context) (*Order, error) {
 	o := Order{Address: &Address{}}
-	uid, err := os.us.idFromSession(ctx)
+	uid, err := ors.us.idFromSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -143,14 +143,14 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 		FROM orders
 		WHERE completed = FALSE AND user_id = ?
 		ORDER BY created_at DESC`
-	err = os.db.QueryRow(q, uid).
+	err = ors.db.QueryRow(q, uid).
 		Scan(&o.ID, &o.UserID, &o.Completed, &o.Location, &o.Address.ID,
 			&o.SessionID, &o.Subtotal, &o.Tax, &o.DeliveryFee,
 			&o.ServiceFee, &o.DeliveryTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			no := &Order{UserID: uid}
-			e := os.create(no)
+			e := ors.create(no)
 			if e != nil {
 				return nil, fmt.Errorf("getting current order: %v", e)
 			}
@@ -158,7 +158,7 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 		}
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
-	err = os.populate(&o)
+	err = ors.populate(&o)
 	if err != nil {
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
@@ -166,9 +166,9 @@ func (os orderService) current(ctx context.Context) (*Order, error) {
 }
 
 // currentID returns the ID of the current user's current order.
-func (os orderService) currentID(ctx context.Context) (int, error) {
+func (ors orderService) currentID(ctx context.Context) (int, error) {
 	var id int
-	uid, err := os.us.idFromSession(ctx)
+	uid, err := ors.us.idFromSession(ctx)
 	if err != nil {
 		return id, err
 	}
@@ -177,7 +177,7 @@ func (os orderService) currentID(ctx context.Context) (int, error) {
 		FROM orders
 		WHERE completed = FALSE AND user_id = ?
 		ORDER BY created_at DESC`
-	err = os.db.QueryRow(q, uid).Scan(&id)
+	err = ors.db.QueryRow(q, uid).Scan(&id)
 	if err != nil {
 		return id, fmt.Errorf("finding current order ID: %v", err)
 	}
@@ -186,7 +186,7 @@ func (os orderService) currentID(ctx context.Context) (int, error) {
 
 // updateOrder updates the mutable fields in the database row corresponsing to
 // the given order.
-func (os orderService) updateOrder(o *Order) error {
+func (ors orderService) updateOrder(o *Order) error {
 	q := `
 		UPDATE orders
 		SET
@@ -200,7 +200,7 @@ func (os orderService) updateOrder(o *Order) error {
 			delivery_time = ?,
 			completed = ?
 		WHERE order_id = ?`
-	stmt, err := os.db.Prepare(q)
+	stmt, err := ors.db.Prepare(q)
 	if err != nil {
 		return fmt.Errorf("preparing order update query: %v", err)
 	}
@@ -209,7 +209,7 @@ func (os orderService) updateOrder(o *Order) error {
 	if err != nil {
 		return fmt.Errorf("executing order update query: %v", err)
 	}
-	err = os.populate(o)
+	err = ors.populate(o)
 	if err != nil {
 		return fmt.Errorf("updating order: %v", err)
 	}
@@ -218,33 +218,33 @@ func (os orderService) updateOrder(o *Order) error {
 
 // cart creates a triple dipper that belongs to the current user's current
 // order.
-func (os orderService) cart(td *TripleDipper, ctx context.Context) error {
-	id, err := os.currentID(ctx)
+func (ors orderService) cart(td *TripleDipper, ctx context.Context) error {
+	id, err := ors.currentID(ctx)
 	if err != nil {
 		return err
 	}
 	td.OrderID = id
-	return os.tds.create(td)
+	return ors.tds.create(td)
 }
 
 // uncart creates a triple dipper that belongs to the current user's current
 // order.
-func (os orderService) uncart(tdid int, ctx context.Context) error {
-	id, err := os.currentID(ctx)
+func (ors orderService) uncart(tdid int, ctx context.Context) error {
+	id, err := ors.currentID(ctx)
 	if err != nil {
 		return err
 	}
-	return os.tds.destroy(tdid, id)
+	return ors.tds.destroy(tdid, id)
 }
 
 // checkOut populates the current user's current order with information from
 // Chilis and returns it.
-func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
-	o, err := os.current(ctx)
+func (ors orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
+	o, err := ors.current(ctx)
 	if err != nil {
 		return nil, err
 	}
-	tdrs, err := os.tds.findByOrder(o.ID)
+	tdrs, err := ors.tds.findByOrder(o.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	a, err := os.as.findByID(aid)
+	a, err := ors.as.findByID(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 		}
 	}
 
-	u, err := os.us.me(ctx)
+	u, err := ors.us.me(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 	o.DeliveryTime = info.DeliveryTime
 	o.Address.ID = aid
 	o.SessionID = sess.ID
-	err = os.updateOrder(o)
+	err = ors.updateOrder(o)
 	if err != nil {
 		return nil, err
 	}
@@ -300,8 +300,8 @@ func (os orderService) checkOut(ctx context.Context, aid int) (*Order, error) {
 }
 
 // place places and returns the current user's current order.
-func (os orderService) place(ctx context.Context, pm *chilis.PaymentMethod) (*Order, error) {
-	o, err := os.current(ctx)
+func (ors orderService) place(ctx context.Context, pm *chilis.PaymentMethod) (*Order, error) {
+	o, err := ors.current(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func (os orderService) place(ctx context.Context, pm *chilis.PaymentMethod) (*Or
 
 	o.Location = loc
 	o.Completed = true
-	err = os.updateOrder(o)
+	err = ors.updateOrder(o)
 	if err != nil {
 		return nil, err
 	}
