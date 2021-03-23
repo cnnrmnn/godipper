@@ -53,5 +53,5 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	log.Fatal(http.ListenAndServe(":3000", c.Handler(mux)))
+	log.Fatal(http.ListenAndServe(":3000", sm.LoadAndSave(c.Handler(mux))))
 }
