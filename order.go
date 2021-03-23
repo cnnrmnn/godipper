@@ -17,7 +17,7 @@ type Order struct {
 	UserID        int             `json:"userId"`
 	SessionID     string          `json:"sessionId"`
 	Location      string          `json:"location"`
-	Address       *Address        `json:"addressId`
+	Address       *Address        `json:"addressId"`
 	TripleDippers []*TripleDipper `json:"tripleDippers"`
 	Completed     bool            `json:"completed"`
 	Subtotal      float32         `json:"subtotal"`
@@ -158,8 +158,8 @@ func (ors orderService) current(ctx context.Context) (*Order, error) {
 		}
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
-        // This could be expensive for larger orders. Make it possible to turn
-        // off order population when only the ID is needed.
+	// This could be expensive for larger orders. Make it possible to turn
+	// off order population when only the ID is needed.
 	err = ors.populate(&o)
 	if err != nil {
 		return nil, fmt.Errorf("finding current order: %v", err)
@@ -202,7 +202,7 @@ func (ors orderService) updateOrder(o *Order) error {
 // cart creates a triple dipper that belongs to the current user's current
 // order.
 func (ors orderService) cart(td *TripleDipper, ctx context.Context) error {
-        o, err := ors.current(ctx)
+	o, err := ors.current(ctx)
 	if err != nil {
 		return err
 	}
