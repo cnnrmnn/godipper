@@ -57,7 +57,6 @@ type order interface {
 	populate(o *Order) error
 	findByUser(ctx context.Context) ([]*Order, error)
 	current(ctx context.Context) (*Order, error)
-	currentID(ctx context.Context) (int, error)
 	create(o *Order) error
 	cart(td *TripleDipper, ctx context.Context) error
 	uncart(tdid int, ctx context.Context) error

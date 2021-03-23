@@ -158,30 +158,13 @@ func (ors orderService) current(ctx context.Context) (*Order, error) {
 		}
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
+        // This could be expensive for larger orders. Make it possible to turn
+        // off order population when only the ID is needed.
 	err = ors.populate(&o)
 	if err != nil {
 		return nil, fmt.Errorf("finding current order: %v", err)
 	}
 	return &o, nil
-}
-
-// currentID returns the ID of the current user's current order.
-func (ors orderService) currentID(ctx context.Context) (int, error) {
-	var id int
-	uid, err := ors.us.idFromSession(ctx)
-	if err != nil {
-		return id, err
-	}
-	q := `
-		SELECT order_id
-		FROM orders
-		WHERE completed = FALSE AND user_id = ?
-		ORDER BY created_at DESC`
-	err = ors.db.QueryRow(q, uid).Scan(&id)
-	if err != nil {
-		return id, fmt.Errorf("finding current order ID: %v", err)
-	}
-	return id, nil
 }
 
 // updateOrder updates the mutable fields in the database row corresponsing to
@@ -219,22 +202,22 @@ func (ors orderService) updateOrder(o *Order) error {
 // cart creates a triple dipper that belongs to the current user's current
 // order.
 func (ors orderService) cart(td *TripleDipper, ctx context.Context) error {
-	id, err := ors.currentID(ctx)
+        o, err := ors.current(ctx)
 	if err != nil {
 		return err
 	}
-	td.OrderID = id
+	td.OrderID = o.ID
 	return ors.tds.create(td)
 }
 
 // uncart creates a triple dipper that belongs to the current user's current
 // order.
 func (ors orderService) uncart(tdid int, ctx context.Context) error {
-	id, err := ors.currentID(ctx)
+	o, err := ors.current(ctx)
 	if err != nil {
 		return err
 	}
-	return ors.tds.destroy(tdid, id)
+	return ors.tds.destroy(tdid, o.ID)
 }
 
 // checkOut populates the current user's current order with information from
