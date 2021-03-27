@@ -13,6 +13,8 @@ type Item struct {
 	TripleDipperID int      `json:"tripleDipperId"`
 	ValueID        int      `json:"valueId"`
 	Value          string   `json:"value"`
+	Description    string   `json:"description"`
+	ImagePath      string   `json:"imagePath"`
 	Extras         []*Extra `json:"extras"`
 }
 
@@ -38,7 +40,7 @@ type itemService struct {
 
 // values returns a slice of all available item values.
 func (is itemService) values() ([]*Item, error) {
-	q := "SELECT item_value_id, item_value FROM item_values"
+	q := "SELECT item_value_id, item_value, description, image_path FROM item_values"
 	rows, err := is.db.Query(q)
 	if err != nil {
 		return nil, fmt.Errorf("finding item values: %v", err)
@@ -47,13 +49,13 @@ func (is itemService) values() ([]*Item, error) {
 	var its []*Item
 	for rows.Next() {
 		var it Item
-		err = rows.Scan(&it.ValueID, &it.Value)
+		err = rows.Scan(&it.ValueID, &it.Value, &it.Description, &it.ImagePath)
 		if err != nil {
 			return nil, fmt.Errorf("scanning item value: %v", err)
 		}
 		exs, err := is.es.values(it.ValueID)
 		if err != nil {
-			fmt.Errorf("finding item extra values: %v", err)
+			return nil, fmt.Errorf("finding item extra values: %v", err)
 		}
 		it.Extras = exs
 		its = append(its, &it)
@@ -188,6 +190,12 @@ var itemValueType = graphql.NewObject(
 				Type: graphql.NewNonNull(graphql.Int),
 			},
 			"value": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"description": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"imagePath": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 			},
 			"extras": &graphql.Field{
