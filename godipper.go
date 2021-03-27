@@ -36,17 +36,24 @@ func main() {
 		order:        ors,
 	}
 
+	mux := http.NewServeMux()
+
 	schema, err := schema(svc)
 	if err != nil {
 		log.Fatalf("starting server: %v", err)
 	}
-
-	mux := http.NewServeMux()
 	mux.Handle("/graphql", handler.New(&handler.Config{
 		Schema:   &schema,
 		Pretty:   true,
 		GraphiQL: true,
 	}))
+
+	assetServer := http.FileServer(http.Dir("./assets"))
+	// The /assets prefix must be stripped. Otherwise, all of the paths that
+	// the file server would search for in the local assets directory would
+	// start with the prefix..
+	// For example, /assets/file => ./assets/assets/file
+	mux.Handle("/assets/", http.StripPrefix("/assets", assetServer))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{os.Getenv("CLIENT_ORIGIN")},
