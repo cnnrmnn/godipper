@@ -91,7 +91,7 @@ WHERE item_value_id = 15;
 UPDATE item_values
 SET
     image_url = '/assets/items/16.png',
-    description = 'Hand-battered fried chicken strips'
+    description = 'Original hand-battered fried chicken strips'
 WHERE item_value_id = 16;
 
 UPDATE item_values
