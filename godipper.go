@@ -51,7 +51,7 @@ func main() {
 	assetServer := http.FileServer(http.Dir("./assets"))
 	// The /assets prefix must be stripped. Otherwise, all of the paths that
 	// the file server would search for in the local assets directory would
-	// start with the prefix..
+	// start with the prefix.
 	// For example, /assets/file => ./assets/assets/file
 	mux.Handle("/assets/", http.StripPrefix("/assets", assetServer))
 
